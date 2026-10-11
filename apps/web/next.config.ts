@@ -2,9 +2,7 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  experimental: {
-    typedRoutes: true,
-  },
+  transpilePackages: ['@magazala/core'],
 };
 
 export default nextConfig;

@@ -24,18 +24,21 @@ const groups = [
   ]},
 ] as const;
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, displayName, workspaceName, isSuperAdmin }: { children: ReactNode; displayName: string; workspaceName: string; isSuperAdmin: boolean }) {
   return <div className="shell">
     <aside className="sidebar">
-      <div className="brand">Magazala</div>
+      <Link href="/" className="brand">Magazala</Link>
       {groups.map((group) => <div className="nav-group" key={group.label}>
         <div className="nav-label">{group.label}</div>
         {group.items.map(([name, href, status]) => <Link className="nav-item" href={href} key={href}>
           <span>{name}</span><span className={`badge ${status.toLowerCase()}`}>{status}</span>
         </Link>)}
       </div>)}
-      <div className="nav-group"><div className="nav-label">Yönetim</div><Link className="nav-item" href="/admin/providers"><span>Admin Paneli</span></Link></div>
+      {isSuperAdmin && <div className="nav-group"><div className="nav-label">Yönetim</div><Link className="nav-item" href="/admin/providers"><span>Admin Paneli</span></Link></div>}
     </aside>
-    <main className="main"><div className="topbar"><strong>Çalışma Alanı</strong><span className="badge active">ACTIVE</span></div>{children}</main>
+    <main className="main">
+      <div className="topbar"><div><strong>{workspaceName}</strong><span style={{marginLeft:10,color:'var(--muted)',fontSize:12}}>{displayName}</span></div><form action="/api/auth/logout" method="post"><button className="action" type="submit">Çıkış</button></form></div>
+      {children}
+    </main>
   </div>;
 }

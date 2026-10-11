@@ -1,7 +1,8 @@
 import Link from 'next/link';
+import { AuthenticatedShell } from '../components/authenticated-shell';
 
 export default function HomePage() {
-  return <div className="content">
+  return <AuthenticatedShell><div className="content">
     <section className="card hero span-12">
       <span className="badge active" style={{width:'fit-content'}}>ACTIVE</span>
       <h1 className="page-title" style={{marginTop:12}}>Üretimden operasyona tek çalışma alanı.</h1>
@@ -13,5 +14,5 @@ export default function HomePage() {
       <section className="card span-4"><h3>Product Intelligence</h3><p>Fikir üretimini kaynaklı pazar araştırmasından ayıran ürün keşif alanı.</p></section>
       <section className="card span-4"><h3>Commerce</h3><p>Ürün, barkod ve mağaza entegrasyonları kontrollü Beta/Preview sınırlarında geliştirilir.</p></section>
     </div>
-  </div>;
+  </div></AuthenticatedShell>;
 }

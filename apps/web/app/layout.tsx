@@ -1,6 +1,5 @@
 import './globals.css';
 import type { ReactNode } from 'react';
-import { AppShell } from '../components/app-shell';
 
 export const metadata = {
   title: 'Magazala',
@@ -8,5 +7,5 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  return <html lang="tr"><body><AppShell>{children}</AppShell></body></html>;
+  return <html lang="tr"><body>{children}</body></html>;
 }
