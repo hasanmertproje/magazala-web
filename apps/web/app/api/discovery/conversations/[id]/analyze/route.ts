@@ -1,0 +1,43 @@
+import { NextResponse } from 'next/server';
+import { requireUserApi } from '../../../../../../lib/auth';
+import { generateProviderBackedText } from '../../../../../../lib/ai-text';
+import { buildDiscoverySystemPrompt } from '../../../../../../lib/discovery-context';
+import { parseDiscoveryAnalysisText } from '../../../../../../lib/discovery-analysis';
+import { db } from '../../../../../../lib/db';
+import { assertSameOrigin } from '../../../../../../lib/request-security';
+
+const ANALYSIS_INSTRUCTION = `Konuşmayı şimdi yapılandırılmış gereksinim analizine dönüştür. Yalnızca geçerli JSON döndür; Markdown kod bloğu kullanma. JSON şeması:\n{\n  "summary": "kısa ama eksiksiz özet",\n  "requirements": [{\n    "title": "...",\n    "module": "...",\n    "category": "BUG|FEATURE_REQUEST|CHANGE_REQUEST|WORKFLOW_REQUIREMENT|INTEGRATION|UI_UX|DATA_REQUIREMENT|AUTOMATION|QUESTION",\n    "userPriority": null,\n    "aiPrioritySuggestion": "LOW|MEDIUM|HIGH|CRITICAL veya null",\n    "description": "...",\n    "confirmedRequirements": ["..."],\n    "acceptanceSuggestions": ["..."],\n    "openQuestions": ["..."],\n    "risks": ["..."],\n    "dependencies": ["..."],\n    "outOfScope": ["..."]\n  }],\n  "overallOpenQuestions": ["..."]\n}\nKullanıcının söylemediği iş kurallarını kesin gereksinim olarak uydurma. Belirsiz noktaları openQuestions içine koy.`;
+
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireUserApi();
+  if (!auth.ok) return NextResponse.json({ ok: false, code: auth.code }, { status: auth.status });
+  try {
+    assertSameOrigin(request);
+    const { id } = await params;
+    const conversation = await db.discoveryConversation.findFirst({ where: { id, workspaceId: auth.context.workspace.id, userId: auth.context.user.id }, include: { messages: { orderBy: { createdAt: 'asc' }, take: 80 } } });
+    if (!conversation) return NextResponse.json({ ok: false, code: 'CONVERSATION_NOT_FOUND' }, { status: 404 });
+    if (conversation.messages.length === 0) return NextResponse.json({ ok: false, code: 'CONVERSATION_EMPTY' }, { status: 409 });
+    if (conversation.confirmationState === 'CONFIRMED') return NextResponse.json({ ok: false, code: 'CONVERSATION_ALREADY_CONFIRMED' }, { status: 409 });
+
+    const systemPrompt = `${await buildDiscoverySystemPrompt(auth.context.workspace.id)}\n\n${ANALYSIS_INSTRUCTION}`;
+    const result = await generateProviderBackedText({
+      workspaceId: auth.context.workspace.id,
+      userId: auth.context.user.id,
+      operation: 'discovery.analysis',
+      systemPrompt,
+      jsonMode: true,
+      messages: [
+        ...conversation.messages.map((message) => ({ role: message.role === 'assistant' ? 'assistant' as const : 'user' as const, content: message.content })),
+        { role: 'user' as const, content: 'Bu konuşmanın gereksinim analizini şimdi yalnız JSON olarak üret.' },
+      ],
+    });
+    const analysis = parseDiscoveryAnalysisText(result.text);
+    await db.discoveryConversation.update({ where: { id }, data: { aiInterpretation: analysis, status: 'ANALYZED', confirmationState: 'PENDING' } });
+    await db.auditLog.create({ data: { workspaceId: auth.context.workspace.id, actorUserId: auth.context.user.id, action: 'discovery.analysis.create', entityType: 'DiscoveryConversation', entityId: id, metadata: { requirementCount: analysis.requirements.length } } });
+    return NextResponse.json({ ok: true, analysis });
+  } catch (error) {
+    const code = error instanceof Error ? error.message : 'DISCOVERY_ANALYSIS_FAILED';
+    const status = ['AI_MODEL_NOT_CONFIGURED','AI_TEXT_ADAPTER_NOT_CONFIGURED'].includes(code) ? 503 : code === 'AI_PROVIDER_UNAVAILABLE' ? 502 : 400;
+    return NextResponse.json({ ok: false, code }, { status });
+  }
+}
