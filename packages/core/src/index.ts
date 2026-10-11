@@ -1,9 +1,15 @@
-export type Capability='text_generation'|'vision_input'|'text_to_image'|'image_to_image'|'image_edit'|'reference_images'|'native_vector'|'vectorization'|'transparent_background'|'high_resolution'|'text_rendering'|'web_search';
-export type QualityProfile='FAST'|'BALANCED'|'BEST_QUALITY'|'VECTOR_PREFERRED'|'PRINT_PREFERRED'|'MANUAL';
-export interface ModelCandidate{id:string;providerId:string;enabled:boolean;capabilities:Capability[];health:'healthy'|'degraded'|'rate_limited'|'quota_exhausted'|'auth_error'|'unavailable'|'disabled';quotaRemaining:number|null;benchmarkScore:number|null;costScore:number|null;latencyMs:number|null;failureRate:number|null;adminPriority:number;commercialUseAllowed:boolean|null}
-export interface RouteRequest{required:Capability[];preferred?:Capability[];requireCommercialUse?:boolean;quality:QualityProfile}
-export function routeModel(req:RouteRequest,candidates:ModelCandidate[]){const eligible=candidates.filter(c=>c.enabled&&['healthy','degraded'].includes(c.health)&&c.health!=='quota_exhausted'&&req.required.every(x=>c.capabilities.includes(x))&&(!req.requireCommercialUse||c.commercialUseAllowed===true)&&(c.quotaRemaining===null||c.quotaRemaining>0));if(!eligible.length)throw new Error('NO_ELIGIBLE_MODEL');const scored=eligible.map(c=>{let score=(c.benchmarkScore??5)*10-(c.failureRate??0)*100-(c.costScore??5)*2-(c.latencyMs??1000)/1000-c.adminPriority;for(const p of req.preferred??[])if(c.capabilities.includes(p))score+=8;if(req.quality==='VECTOR_PREFERRED'&&c.capabilities.includes('native_vector'))score+=20;if(req.quality==='BEST_QUALITY')score+=(c.benchmarkScore??0)*4;return{candidate:c,score}}).sort((a,b)=>b.score-a.score);return{selected:scored[0],fallbacks:scored.slice(1)}}
-export interface Entitlement{feature:string;enabled:boolean;limit?:number|null}export function evaluateEntitlement(feature:string,items:Entitlement[],used=0){const item=items.find(x=>x.feature===feature);if(!item?.enabled)return{allowed:false,reason:'FEATURE_DISABLED'} as const;if(item.limit!=null&&used>=item.limit)return{allowed:false,reason:'QUOTA_EXHAUSTED'} as const;return{allowed:true,remaining:item.limit==null?null:Math.max(0,item.limit-used)} as const}
-export function normalizeRequirement(input:{title:string;module:string;requirements:string[];openQuestions?:string[];risks?:string[]}){const clean=(v:string)=>v.trim().replace(/\s+/g,' ');const uniq=(a:string[])=>[...new Set(a.map(clean).filter(Boolean))];return{title:clean(input.title),module:clean(input.module),requirements:uniq(input.requirements),openQuestions:uniq(input.openQuestions??[]),risks:uniq(input.risks??[])}}
-export function createInternalSku(prefix:string,sequence:number){if(sequence<0||!Number.isInteger(sequence))throw new Error('INVALID_SEQUENCE');return `${prefix.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8)||'SKU'}-${String(sequence).padStart(6,'0')}`}
-export function assertWorkspaceAccess(actorWorkspaceId:string,resourceWorkspaceId:string,isSuperAdmin=false){if(!isSuperAdmin&&actorWorkspaceId!==resourceWorkspaceId)throw new Error('WORKSPACE_ACCESS_DENIED')}
+export * from './entitlements/types';
+export * from './entitlements/service';
+export * from './providers/types';
+export * from './router/types';
+export * from './router/smart-router';
+export * from './discovery/types';
+export * from './discovery/requirement-normalizer';
+export * from './commerce/barcode';
+export * from './product-intelligence/types';
+export * from './usage/types';
+export * from './providers/guide-seed';
+export * from './discovery/system-prompt';
+export * from './discovery/export';
+export * from './security/credentials';
+export * from './workspaces/scope';
