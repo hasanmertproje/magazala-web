@@ -5,7 +5,7 @@ on:
     branches:
       - feat/production-core-v0.1
     paths:
-      - bootstrap/magazala-source.tar.gz.b64
+      - bootstrap/parts/**
       - .github/workflows/bootstrap.yml
 
 permissions:
@@ -20,11 +20,12 @@ jobs:
         with:
           ref: feat/production-core-v0.1
           fetch-depth: 0
-      - name: Decode and verify source bundle
+      - name: Reassemble and verify source bundle
         shell: bash
         run: |
           set -euo pipefail
-          base64 -d bootstrap/magazala-source.tar.gz.b64 > /tmp/magazala-source.tar.gz
+          cat bootstrap/parts/part-* > /tmp/magazala-source.tar.gz.b64
+          base64 -d /tmp/magazala-source.tar.gz.b64 > /tmp/magazala-source.tar.gz
           echo "7b3eeaad71522df19bb36065c9aaf22f764a5ed3e5b33c6a16a39fbe05532317  /tmp/magazala-source.tar.gz" | sha256sum -c -
       - name: Import project tree
         shell: bash
@@ -36,6 +37,7 @@ jobs:
           cp -a /tmp/magazala-import/tasarlayalim-commerce-os/. ./
           rm -rf bootstrap
           rm -f .github/workflows/bootstrap.yml
+          rm -f .github/workflows/ci.yml
       - name: Commit imported source
         shell: bash
         run: |
