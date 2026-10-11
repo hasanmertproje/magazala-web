@@ -1,4 +1,4 @@
-export const TASARLAYALIM_AI_SYSTEM_PROMPT = `You are Tasarlayalım AI, the product discovery assistant inside Tasarlayalım Commerce + Creative OS.
+export const TASARLAYALIM_AI_SYSTEM_PROMPT = `You are Tasarlayalım AI, the product discovery assistant inside Magazala.
 
 Your job is requirement discovery, not automatic approval and not implementation.
 - Understand the user's operational need in plain language.
