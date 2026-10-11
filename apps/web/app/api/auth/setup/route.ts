@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '../../../../lib/db';
+import { CORE_FEATURE_CATALOG } from '../../../../lib/feature-catalog';
 import { assertSameOrigin, isHtmlForm } from '../../../../lib/request-security';
 import { issueSessionToken, SESSION_COOKIE, sessionCookieOptions } from '../../../../lib/session';
 
@@ -28,23 +29,14 @@ export async function POST(request: Request) {
 
     const result = await db.$transaction(async (tx) => {
       if (await tx.user.count() !== 0) throw new Error('SETUP_ALREADY_COMPLETED');
-      const user = await tx.user.create({
-        data: { email: input.email, displayName: input.displayName, passwordHash, isSuperAdmin: true },
-      });
-      const workspace = await tx.workspace.create({
-        data: {
-          name: input.workspaceName,
-          slug: workspaceSlug(input.workspaceName),
-          members: { create: { userId: user.id, role: 'ADMIN' } },
-        },
-      });
+      await tx.feature.createMany({ data: CORE_FEATURE_CATALOG.map((feature) => ({ ...feature })), skipDuplicates: true });
+      const user = await tx.user.create({ data: { email: input.email, displayName: input.displayName, passwordHash, isSuperAdmin: true } });
+      const workspace = await tx.workspace.create({ data: { name: input.workspaceName, slug: workspaceSlug(input.workspaceName), members: { create: { userId: user.id, role: 'ADMIN' } } } });
       await tx.auditLog.create({ data: { actorUserId: user.id, workspaceId: workspace.id, action: 'platform.setup', entityType: 'Workspace', entityId: workspace.id } });
       return { user, workspace };
     }, { isolationLevel: 'Serializable' });
 
-    const response = formRequest
-      ? NextResponse.redirect(new URL('/', request.url), 303)
-      : NextResponse.json({ ok: true, user: { id: result.user.id, email: result.user.email }, workspace: { id: result.workspace.id, name: result.workspace.name } }, { status: 201 });
+    const response = formRequest ? NextResponse.redirect(new URL('/', request.url), 303) : NextResponse.json({ ok: true, user: { id: result.user.id, email: result.user.email }, workspace: { id: result.workspace.id, name: result.workspace.name } }, { status: 201 });
     response.cookies.set(SESSION_COOKIE, issueSessionToken(result.user.id), sessionCookieOptions());
     return response;
   } catch (error) {

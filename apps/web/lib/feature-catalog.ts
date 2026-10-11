@@ -1,0 +1,15 @@
+export const CORE_FEATURE_CATALOG = [
+  { key: 'ai.design.generate', label: 'AI görsel üretimi', module: 'AI Design Studio', status: 'ACTIVE' as const, description: 'Metinden görsel üretimi ve güvenli asset kaydı.' },
+  { key: 'ai.design.reference', label: 'Referans görselle üretim', module: 'AI Design Studio', status: 'ACTIVE' as const, description: 'Referans görsel kullanan uyumlu model akışları.' },
+  { key: 'ai.design.vector', label: 'Vektör üretimi', module: 'AI Design Studio', status: 'ACTIVE' as const, description: 'Yalnız gerçek native vector veya doğrulanmış vectorization çıktıları.' },
+  { key: 'ai.design.print', label: 'Baskı araçları', module: 'AI Design Studio', status: 'ACTIVE' as const, description: 'Baskı amacı ve çıktı hazırlama araçları.' },
+  { key: 'product_intelligence.basic', label: 'Ürün fikirleri', module: 'Product Intelligence', status: 'ACTIVE' as const, description: 'Pazar verisi iddiası taşımayan yaratıcı ürün fikirleri.' },
+  { key: 'product_intelligence.web_research', label: 'Kaynaklı ürün araştırması', module: 'Product Intelligence', status: 'ACTIVE' as const, description: 'Dış kaynakları provenance bilgisiyle kullanan araştırma.' },
+  { key: 'tasarlayalim_ai.discovery', label: 'Özellikler Hakkında Konuş', module: 'Tasarlayalım AI', status: 'ACTIVE' as const, description: 'Kullanıcı ihtiyacını yapılandırılmış gereksinime dönüştürme.' },
+  { key: 'commerce.products', label: 'Ürünler', module: 'Commerce', status: 'BETA' as const },
+  { key: 'commerce.barcode', label: 'SKU ve barkod', module: 'Commerce', status: 'BETA' as const },
+  { key: 'commerce.import_export', label: 'Import / Export', module: 'Commerce', status: 'BETA' as const },
+  { key: 'stores.trendyol', label: 'Trendyol bağlantısı', module: 'Commerce', status: 'PREVIEW' as const },
+  { key: 'inventory.basic', label: 'Envanter', module: 'Inventory', status: 'PREVIEW' as const },
+  { key: 'automation.workflows', label: 'İş akışları', module: 'Automation', status: 'BETA' as const },
+] as const;
