@@ -1,0 +1,176 @@
+import { randomUUID } from 'node:crypto';
+import { TASARLAYALIM_AI_SYSTEM_PROMPT } from '@magazala/core';
+import { db } from './db';
+import { revealProviderSecret } from './provider-credentials';
+
+export type TextChatMessage = { role: 'user' | 'assistant'; content: string };
+
+type ProviderCallResult = {
+  text: string;
+  inputUnits?: number;
+  outputUnits?: number;
+};
+
+type GenerateTextInput = {
+  workspaceId: string;
+  userId: string;
+  operation: 'discovery.chat' | 'discovery.analysis';
+  messages: TextChatMessage[];
+  systemPrompt?: string;
+  jsonMode?: boolean;
+};
+
+type Candidate = Awaited<ReturnType<typeof loadCandidates>>[number];
+
+async function loadCandidates() {
+  const models = await db.aIModel.findMany({
+    where: {
+      enabled: true,
+      capabilities: { some: { capability: 'text_generation' } },
+      provider: { enabled: true, credentials: { some: { enabled: true } } },
+    },
+    include: {
+      capabilities: true,
+      provider: {
+        include: {
+          credentials: { where: { enabled: true }, orderBy: { updatedAt: 'desc' }, take: 1 },
+        },
+      },
+    },
+  });
+  return models.sort((a, b) =>
+    a.provider.priority - b.provider.priority ||
+    a.provider.fallbackPriority - b.provider.fallbackPriority ||
+    (a.latencyMsP50 ?? Number.MAX_SAFE_INTEGER) - (b.latencyMsP50 ?? Number.MAX_SAFE_INTEGER),
+  );
+}
+
+async function invokeNvidia(candidate: Candidate, secret: string, input: GenerateTextInput): Promise<ProviderCallResult> {
+  const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
+      model: candidate.externalModelId,
+      messages: [
+        { role: 'system', content: input.systemPrompt ?? TASARLAYALIM_AI_SYSTEM_PROMPT },
+        ...input.messages,
+      ],
+      temperature: input.operation === 'discovery.analysis' ? 0.1 : 0.35,
+      max_tokens: input.operation === 'discovery.analysis' ? 2400 : 1400,
+      stream: false,
+    }),
+    cache: 'no-store',
+    signal: AbortSignal.timeout(45_000),
+  });
+  if (!response.ok) throw new Error(`NVIDIA_HTTP_${response.status}`);
+  const payload = await response.json() as {
+    choices?: Array<{ message?: { content?: string } }>;
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
+  };
+  const text = payload.choices?.[0]?.message?.content?.trim();
+  if (!text) throw new Error('NVIDIA_EMPTY_RESPONSE');
+  return { text, inputUnits: payload.usage?.prompt_tokens, outputUnits: payload.usage?.completion_tokens };
+}
+
+async function invokeGemini(candidate: Candidate, secret: string, input: GenerateTextInput): Promise<ProviderCallResult> {
+  const model = candidate.externalModelId.replace(/^models\//, '');
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    method: 'POST',
+    headers: { 'x-goog-api-key': secret, 'Content-Type': 'application/json', Accept: 'application/json', 'x-goog-api-client': 'magazala/0.1.0' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: input.systemPrompt ?? TASARLAYALIM_AI_SYSTEM_PROMPT }] },
+      contents: input.messages.map((message) => ({
+        role: message.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: message.content }],
+      })),
+      generationConfig: {
+        temperature: input.operation === 'discovery.analysis' ? 0.1 : 0.35,
+        maxOutputTokens: input.operation === 'discovery.analysis' ? 2400 : 1400,
+        ...(input.jsonMode ? { responseMimeType: 'application/json' } : {}),
+      },
+    }),
+    cache: 'no-store',
+    signal: AbortSignal.timeout(45_000),
+  });
+  if (!response.ok) throw new Error(`GEMINI_HTTP_${response.status}`);
+  const payload = await response.json() as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
+  };
+  const text = payload.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('').trim();
+  if (!text) throw new Error('GEMINI_EMPTY_RESPONSE');
+  return { text, inputUnits: payload.usageMetadata?.promptTokenCount, outputUnits: payload.usageMetadata?.candidatesTokenCount };
+}
+
+async function invokeCandidate(candidate: Candidate, secret: string, input: GenerateTextInput) {
+  if (candidate.provider.slug === 'nvidia-nim') return invokeNvidia(candidate, secret, input);
+  if (candidate.provider.slug === 'google-gemini') return invokeGemini(candidate, secret, input);
+  throw new Error('PROVIDER_TEXT_ADAPTER_NOT_SUPPORTED');
+}
+
+function safeErrorCode(error: unknown): string {
+  if (!(error instanceof Error)) return 'AI_PROVIDER_ERROR';
+  return error.message.replace(/[^A-Z0-9_\-]/gi, '_').slice(0, 120) || 'AI_PROVIDER_ERROR';
+}
+
+export async function generateProviderBackedText(input: GenerateTextInput) {
+  const candidates = await loadCandidates();
+  if (candidates.length === 0) throw new Error('AI_MODEL_NOT_CONFIGURED');
+
+  let attemptedSupportedAdapter = false;
+  for (const candidate of candidates) {
+    const credential = candidate.provider.credentials[0];
+    if (!credential) continue;
+    if (!['nvidia-nim', 'google-gemini'].includes(candidate.provider.slug)) continue;
+    attemptedSupportedAdapter = true;
+
+    const requestId = randomUUID();
+    const startedAt = new Date();
+    const startedMs = Date.now();
+    try {
+      const secret = await revealProviderSecret(credential.encryptedValue);
+      const result = await invokeCandidate(candidate, secret, input);
+      const finishedAt = new Date();
+      const latencyMs = Date.now() - startedMs;
+      await db.$transaction([
+        db.usageLedger.create({ data: {
+          workspaceId: input.workspaceId,
+          userId: input.userId,
+          providerId: candidate.providerId,
+          modelId: candidate.id,
+          operation: input.operation,
+          requestId,
+          startedAt,
+          finishedAt,
+          success: true,
+          inputUnits: result.inputUnits,
+          outputUnits: result.outputUnits,
+          latencyMs,
+        } }),
+        db.providerCredential.update({ where: { id: credential.id }, data: { lastSuccessAt: finishedAt, lastErrorCode: null } }),
+      ]);
+      return { ...result, providerId: candidate.providerId, modelId: candidate.id, requestId, latencyMs };
+    } catch (error) {
+      const finishedAt = new Date();
+      const code = safeErrorCode(error);
+      await db.$transaction([
+        db.usageLedger.create({ data: {
+          workspaceId: input.workspaceId,
+          userId: input.userId,
+          providerId: candidate.providerId,
+          modelId: candidate.id,
+          operation: input.operation,
+          requestId,
+          startedAt,
+          finishedAt,
+          success: false,
+          latencyMs: Date.now() - startedMs,
+        } }),
+        db.providerCredential.update({ where: { id: credential.id }, data: { lastErrorAt: finishedAt, lastErrorCode: code } }),
+      ]);
+    }
+  }
+
+  if (!attemptedSupportedAdapter) throw new Error('AI_TEXT_ADAPTER_NOT_CONFIGURED');
+  throw new Error('AI_PROVIDER_UNAVAILABLE');
+}

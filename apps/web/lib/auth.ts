@@ -37,6 +37,13 @@ export async function requireSuperAdminPage() {
   return context;
 }
 
+export async function requireUserApi() {
+  const context = await getAuthContext();
+  if (!context) return { ok: false as const, status: 401, code: 'AUTH_REQUIRED' };
+  if (!context.workspace) return { ok: false as const, status: 409, code: 'WORKSPACE_REQUIRED' };
+  return { ok: true as const, context: { ...context, workspace: context.workspace } };
+}
+
 export async function requireSuperAdminApi() {
   const context = await getAuthContext();
   if (!context) return { ok: false as const, status: 401, code: 'AUTH_REQUIRED' };
