@@ -1,5 +1,6 @@
 name: Bootstrap production core
 
+# Registered on the default branch; this copy executes only on the production-core branch.
 on:
   push:
     branches:
