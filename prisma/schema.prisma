@@ -7,15 +7,69 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum WorkspaceRole { ADMIN USER }
-enum ModuleStatus { ACTIVE BETA PREVIEW DISABLED }
-enum ProviderHealthStatus { HEALTHY DEGRADED RATE_LIMITED QUOTA_EXHAUSTED AUTH_ERROR UNAVAILABLE DISABLED }
-enum RequirementCategory { BUG FEATURE_REQUEST CHANGE_REQUEST WORKFLOW_REQUIREMENT INTEGRATION UI_UX DATA_REQUIREMENT AUTOMATION QUESTION }
-enum RequirementStatus { NEW NEEDS_REVIEW NEEDS_CLARIFICATION ACCEPTED PLANNED IN_PROGRESS BETA RELEASED REJECTED MERGED }
-enum JobStatus { QUEUED RUNNING COMPLETED FAILED CANCELLED }
-enum ResearchMode { IDEA RESEARCH }
-enum EvidenceKind { DIRECT ESTIMATE INFERRED }
-enum ConnectorMode { MOCK STAGE PRODUCTION }
+enum WorkspaceRole {
+  ADMIN
+  USER
+}
+enum ModuleStatus {
+  ACTIVE
+  BETA
+  PREVIEW
+  DISABLED
+}
+enum ProviderHealthStatus {
+  HEALTHY
+  DEGRADED
+  RATE_LIMITED
+  QUOTA_EXHAUSTED
+  AUTH_ERROR
+  UNAVAILABLE
+  DISABLED
+}
+enum RequirementCategory {
+  BUG
+  FEATURE_REQUEST
+  CHANGE_REQUEST
+  WORKFLOW_REQUIREMENT
+  INTEGRATION
+  UI_UX
+  DATA_REQUIREMENT
+  AUTOMATION
+  QUESTION
+}
+enum RequirementStatus {
+  NEW
+  NEEDS_REVIEW
+  NEEDS_CLARIFICATION
+  ACCEPTED
+  PLANNED
+  IN_PROGRESS
+  BETA
+  RELEASED
+  REJECTED
+  MERGED
+}
+enum JobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+enum ResearchMode {
+  IDEA
+  RESEARCH
+}
+enum EvidenceKind {
+  DIRECT
+  ESTIMATE
+  INFERRED
+}
+enum ConnectorMode {
+  MOCK
+  STAGE
+  PRODUCTION
+}
 
 model User {
   id           String   @id @default(cuid())
@@ -249,7 +303,7 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  assets      Asset[]
+  assets       Asset[]
   generations Generation[]
   researchSessions ProductResearchSession[]
   @@index([workspaceId, updatedAt])
@@ -273,7 +327,7 @@ model Asset {
   metadata    Json?
   createdAt   DateTime @default(now())
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  project      Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   @@unique([workspaceId, checksum, storageKey])
   @@index([workspaceId, createdAt])
 }
@@ -304,11 +358,11 @@ model GenerationAttempt {
   providerId   String
   modelId      String
   attemptNo    Int
-  startedAt    DateTime
+  startedAt     DateTime
   finishedAt   DateTime?
   success      Boolean?
   errorCode    String?
-  latencyMs    Int?
+  latencyMs     Int?
   generation   Generation @relation(fields: [generationId], references: [id], onDelete: Cascade)
   @@unique([generationId, attemptNo])
 }
@@ -321,7 +375,7 @@ model ProductResearchSession {
   mode        ResearchMode
   query       String
   createdAt   DateTime @default(now())
-  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  project      Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
   sources     ResearchSource[]
   opportunities Opportunity[]
   @@index([workspaceId, createdAt])
@@ -339,8 +393,8 @@ model ResearchSource {
 }
 
 model Opportunity {
-  id         String @id @default(cuid())
-  sessionId  String
+  id        String @id @default(cuid())
+  sessionId String
   title      String
   rationale  String
   evidence   Json
