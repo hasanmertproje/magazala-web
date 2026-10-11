@@ -17,5 +17,4 @@ jobs:
         with:
           node-version: 22
       - run: npm install -g typescript@5
-      - run: tsc -p packages/core/tsconfig.json --noEmit
-      - run: node --test packages/core-tests/core.test.mjs
+      - run: npm run check
