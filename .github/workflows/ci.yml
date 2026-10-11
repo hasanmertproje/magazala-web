@@ -9,12 +9,22 @@ permissions:
   contents: read
 
 jobs:
-  core:
+  quality:
+    if: ${{ github.event_name == 'pull_request' || hashFiles('package.json') != '' }}
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://magazala:magazala@localhost:5432/magazala
+      APP_URL: http://localhost:3000
+      SESSION_SECRET: ci-session-secret-must-be-at-least-32-characters-long
+      CREDENTIAL_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install -g typescript@5
+          cache: npm
+      - run: npm install
+      - run: npx prisma generate --schema=prisma/schema.prisma
+      - run: npx prisma validate --schema=prisma/schema.prisma
       - run: npm run check
+      - run: npm run build
