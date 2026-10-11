@@ -3,7 +3,13 @@
 ## Implemented foundation
 - Monorepo structure and Next.js 16-compatible web surface
 - Production/Beta/Preview navigation semantics
-- Provider Center initial UI and verified provider guide seed
+- Workspace-scoped persistent authentication foundation
+- One-time first-admin setup flow with bcrypt password hashing
+- Signed httpOnly session cookie with expiry and server-side user revalidation
+- Protected user/admin application shells
+- Provider Center database UI and verified provider guide seed
+- Encrypted provider credential storage and masked display
+- Provider enable/disable, audit events and supported-provider connection checks
 - Smart Model Router domain scoring with hard capability filtering
 - Package/entitlement/quota decision service
 - Workspace isolation guards
@@ -17,10 +23,11 @@
 - Prisma PostgreSQL schema covering core + Beta commerce boundaries
 - Docker Compose services for PostgreSQL, Redis and MinIO
 - Architecture/provider/print/product-intelligence/commerce/discovery docs
-- CI core TypeScript check
+- CI pipeline for Prisma validation, core tests and Next production build
 
-## Verified locally
+## Verified
 - Core TypeScript compilation
+- 6/6 core executable tests on GitHub Actions / Node 22
 - Entitlement/quota decision
 - Router capability enforcement
 - Internal identifier generation
@@ -28,10 +35,10 @@
 - Workspace tenant guard
 - Credential encryption/decryption
 
-## Intentionally not claimed complete yet
-- Web dependency installation/build (registry was unreachable in this execution environment)
-- Database migration validation with Prisma binary
-- Login/session persistence implementation
+## Pending validation / implementation
+- Full Next.js production build after auth/provider persistence additions
+- Committed Prisma migration set and deploy validation against PostgreSQL
+- Distributed login rate limiting / session revocation strategy
 - Queue/worker runtime
 - S3 runtime adapter
 - Real image provider generation call
@@ -41,4 +48,4 @@
 - XLSX import worker
 - Trendyol Stage/Production connection
 
-These items are not represented as active integrations in the user interface.
+Pending items are not represented as active production integrations in the user interface.
