@@ -1,18 +1,1 @@
-import Link from 'next/link';
-import { AuthenticatedShell } from '../components/authenticated-shell';
-
-export default function HomePage() {
-  return <AuthenticatedShell><div className="content">
-    <section className="card hero span-12">
-      <span className="badge active" style={{width:'fit-content'}}>ACTIVE</span>
-      <h1 className="page-title" style={{marginTop:12}}>Üretimden operasyona tek çalışma alanı.</h1>
-      <p className="page-subtitle">Tasarım üretin, ürün fikirlerini araştırın ve büyüyen commerce operasyonunuzu aynı modüler sistem üzerinden yönetin.</p>
-      <div style={{display:'flex',gap:10,marginTop:18}}><Link className="action primary" href="/create/design-studio">Tasarım oluştur</Link><Link className="action" href="/create/product-intelligence">Ürün fikri araştır</Link></div>
-    </section>
-    <div className="grid">
-      <section className="card span-4"><h3>AI Design Studio</h3><p>Referanslarla, üretim amacı ve çıktı gereksinimleriyle kontrollü görsel üretim alanı.</p></section>
-      <section className="card span-4"><h3>Product Intelligence</h3><p>Fikir üretimini kaynaklı pazar araştırmasından ayıran ürün keşif alanı.</p></section>
-      <section className="card span-4"><h3>Commerce</h3><p>Ürün, barkod ve mağaza entegrasyonları kontrollü Beta/Preview sınırlarında geliştirilir.</p></section>
-    </div>
-  </div></AuthenticatedShell>;
-}
+export default function Home(){return <div className="content"><span className="badge active">ACTIVE</span><h1 className="title" style={{marginTop:12}}>Tek merkezden üretin, araştırın ve yönetin.</h1><p className="subtitle">AI Design Studio ve Product Intelligence aktif çekirdek modüllerdir. Commerce alanları, gerçek operasyon akışları kesinleşmeden önce Beta ve Preview sınırlarında tutulur.</p><div className="grid"><section className="card span6"><h2>AI Design Studio</h2><p className="subtitle">Referans görseller, çıktı amacı, baskı ve vektör tercihleriyle kontrollü üretim.</p></section><section className="card span6"><h2>Product Intelligence</h2><p className="subtitle">Fikir modu ile yaratıcı öneri; araştırma modu ile kaynaklı ve doğrulanabilir pazar incelemesi.</p></section><section className="card span6"><span className="badge beta">BETA</span><h2>Commerce Core</h2><p className="subtitle">Ürün, SKU, barkod ve aktarım domainleri kontrollü olarak hazırlanıyor.</p></section><section className="card span6"><h2>Tasarlayalım AI</h2><p className="subtitle">Özellik isteklerini sohbet ederek netleştirir, kullanıcı onayı sonrası yapılandırılmış gereksinime dönüştürür.</p></section></div></div>}

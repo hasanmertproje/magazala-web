@@ -1,8 +1,3 @@
 import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
-  poweredByHeader: false,
-  transpilePackages: ['@magazala/core'],
-};
-
+const nextConfig: NextConfig = { reactStrictMode: true, poweredByHeader: false };
 export default nextConfig;
