@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   quality:
-    if: github.event_name == 'pull_request' || hashFiles('package.json') != ''
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://magazala:magazala@localhost:5432/magazala
@@ -20,11 +19,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        if: hashFiles('package.json') != ''
         with:
           node-version: 22
           cache: npm
       - run: npm install
+        if: hashFiles('package.json') != ''
       - run: npx prisma generate --schema=prisma/schema.prisma
+        if: hashFiles('package.json') != ''
       - run: npx prisma validate --schema=prisma/schema.prisma
+        if: hashFiles('package.json') != ''
       - run: npm run check
+        if: hashFiles('package.json') != ''
       - run: npm run build
+        if: hashFiles('package.json') != ''
