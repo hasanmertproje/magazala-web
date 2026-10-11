@@ -1,0 +1,47 @@
+name: Bootstrap production core
+
+on:
+  push:
+    branches:
+      - feat/production-core-v0.1
+    paths:
+      - bootstrap/magazala-source.tar.gz.b64
+      - .github/workflows/bootstrap.yml
+
+permissions:
+  contents: write
+
+jobs:
+  import-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/production-core-v0.1
+          fetch-depth: 0
+      - name: Decode and verify source bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d bootstrap/magazala-source.tar.gz.b64 > /tmp/magazala-source.tar.gz
+          echo "7b3eeaad71522df19bb36065c9aaf22f764a5ed3e5b33c6a16a39fbe05532317  /tmp/magazala-source.tar.gz" | sha256sum -c -
+      - name: Import project tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/magazala-import
+          mkdir -p /tmp/magazala-import
+          tar -xzf /tmp/magazala-source.tar.gz -C /tmp/magazala-import
+          cp -a /tmp/magazala-import/tasarlayalim-commerce-os/. ./
+          rm -rf bootstrap
+          rm -f .github/workflows/bootstrap.yml
+      - name: Commit imported source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: import Magazala production core v0.1"
+          git push origin HEAD:feat/production-core-v0.1
