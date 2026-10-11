@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { requireUserApi } from '../../../../../../lib/auth';
 import { generateProviderBackedText } from '../../../../../../lib/ai-text';
@@ -32,7 +33,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       ],
     });
     const analysis = parseDiscoveryAnalysisText(result.text);
-    await db.discoveryConversation.update({ where: { id }, data: { aiInterpretation: analysis, status: 'ANALYZED', confirmationState: 'PENDING' } });
+    const storedAnalysis = JSON.parse(JSON.stringify(analysis)) as Prisma.InputJsonValue;
+    await db.discoveryConversation.update({ where: { id }, data: { aiInterpretation: storedAnalysis, status: 'ANALYZED', confirmationState: 'PENDING' } });
     await db.auditLog.create({ data: { workspaceId: auth.context.workspace.id, actorUserId: auth.context.user.id, action: 'discovery.analysis.create', entityType: 'DiscoveryConversation', entityId: id, metadata: { requirementCount: analysis.requirements.length } } });
     return NextResponse.json({ ok: true, analysis });
   } catch (error) {
