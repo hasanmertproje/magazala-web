@@ -1,0 +1,51 @@
+name: Bootstrap source tree
+
+on:
+  push:
+    branches:
+      - feat/production-core-v0.1
+    paths:
+      - '.bootstrap/**'
+      - '.github/workflows/bootstrap-source.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/production-core-v0.1
+          fetch-depth: 0
+      - name: Expand source package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .bootstrap/part-* | base64 -d > /tmp/source.zip
+          rm -rf /tmp/source
+          mkdir -p /tmp/source
+          unzip -q /tmp/source.zip -d /tmp/source
+          test -f /tmp/source/tasarlayalim-commerce-os/package.json
+          rsync -a \
+            --exclude='.git/' \
+            --exclude='.bootstrap/' \
+            --exclude='.github/workflows/bootstrap-source.yml' \
+            /tmp/source/tasarlayalim-commerce-os/ ./
+          rm -rf .bootstrap
+          rm -f .github/workflows/bootstrap-source.yml
+      - name: Commit source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No source changes to commit.'
+            exit 0
+          fi
+          git commit -m 'feat: bootstrap production core v0.1'
+          git push origin HEAD:feat/production-core-v0.1
