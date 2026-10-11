@@ -3,51 +3,6 @@ import { NextResponse } from 'next/server';
 import { requireUserApi } from '../../../../../../lib/auth';
 import { parseDiscoveryAnalysis } from '../../../../../../lib/discovery-analysis';
 import { db } from '../../../../../../lib/db';
+import { assertFeatureEnabled } from '../../../../../../lib/entitlements';
 import { assertSameOrigin } from '../../../../../../lib/request-security';
-
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireUserApi();
-  if (!auth.ok) return NextResponse.json({ ok: false, code: auth.code }, { status: auth.status });
-  try {
-    assertSameOrigin(request);
-    const { id } = await params;
-    const conversation = await db.discoveryConversation.findFirst({ where: { id, workspaceId: auth.context.workspace.id, userId: auth.context.user.id }, include: { requirements: true } });
-    if (!conversation) return NextResponse.json({ ok: false, code: 'CONVERSATION_NOT_FOUND' }, { status: 404 });
-    if (conversation.confirmationState === 'CONFIRMED') return NextResponse.json({ ok: true, requirements: conversation.requirements, alreadyConfirmed: true });
-    if (!conversation.aiInterpretation) return NextResponse.json({ ok: false, code: 'ANALYSIS_REQUIRED' }, { status: 409 });
-    const analysis = parseDiscoveryAnalysis(conversation.aiInterpretation);
-    const now = new Date();
-    const adminUsers = await db.user.findMany({ where: { isSuperAdmin: true }, select: { id: true } });
-
-    const requirements = await db.$transaction(async (tx) => {
-      const created = [];
-      for (const item of analysis.requirements) {
-        created.push(await tx.requirement.create({ data: {
-          workspaceId: auth.context.workspace.id,
-          conversationId: id,
-          title: item.title,
-          module: item.module,
-          category: item.category as RequirementCategory,
-          userPriority: item.userPriority ?? null,
-          aiPrioritySuggestion: item.aiPrioritySuggestion ?? null,
-          description: item.description,
-          confirmedRequirements: item.confirmedRequirements,
-          acceptanceSuggestions: item.acceptanceSuggestions,
-          openQuestions: item.openQuestions,
-          risks: item.risks,
-          dependencies: item.dependencies,
-          outOfScope: item.outOfScope,
-          userConfirmedAt: now,
-          status: 'NEW',
-        } }));
-      }
-      await tx.discoveryConversation.update({ where: { id }, data: { confirmationState: 'CONFIRMED', status: 'SUBMITTED' } });
-      if (adminUsers.length) await tx.notification.createMany({ data: adminUsers.map((admin) => ({ userId: admin.id, type: 'REQUIREMENT_CONFIRMED', title: 'Yeni Tasarlayalım AI talebi', body: `${analysis.requirements.length} gereksinim kullanıcı tarafından onaylandı.` })) });
-      await tx.auditLog.create({ data: { workspaceId: auth.context.workspace.id, actorUserId: auth.context.user.id, action: 'discovery.requirements.confirm', entityType: 'DiscoveryConversation', entityId: id, metadata: { requirementCount: created.length } } });
-      return created;
-    });
-    return NextResponse.json({ ok: true, requirements });
-  } catch (error) {
-    return NextResponse.json({ ok: false, code: error instanceof Error ? error.message : 'DISCOVERY_CONFIRM_FAILED' }, { status: 400 });
-  }
-}
+export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){const auth=await requireUserApi();if(!auth.ok)return NextResponse.json({ok:false,code:auth.code},{status:auth.status});try{assertSameOrigin(request);await assertFeatureEnabled(auth.context.workspace.id,auth.context.user.isSuperAdmin,'tasarlayalim_ai.discovery');const{id}=await params;const conversation=await db.discoveryConversation.findFirst({where:{id,workspaceId:auth.context.workspace.id,userId:auth.context.user.id},include:{requirements:true}});if(!conversation)return NextResponse.json({ok:false,code:'CONVERSATION_NOT_FOUND'},{status:404});if(conversation.confirmationState==='CONFIRMED')return NextResponse.json({ok:true,requirements:conversation.requirements,alreadyConfirmed:true});if(!conversation.aiInterpretation)return NextResponse.json({ok:false,code:'ANALYSIS_REQUIRED'},{status:409});const analysis=parseDiscoveryAnalysis(conversation.aiInterpretation);const now=new Date();const adminUsers=await db.user.findMany({where:{isSuperAdmin:true},select:{id:true}});const requirements=await db.$transaction(async tx=>{const created=[];for(const item of analysis.requirements){created.push(await tx.requirement.create({data:{workspaceId:auth.context.workspace.id,conversationId:id,title:item.title,module:item.module,category:item.category as RequirementCategory,userPriority:item.userPriority??null,aiPrioritySuggestion:item.aiPrioritySuggestion??null,description:item.description,confirmedRequirements:item.confirmedRequirements,acceptanceSuggestions:item.acceptanceSuggestions,openQuestions:item.openQuestions,risks:item.risks,dependencies:item.dependencies,outOfScope:item.outOfScope,userConfirmedAt:now,status:'NEW'}}));}await tx.discoveryConversation.update({where:{id},data:{confirmationState:'CONFIRMED',status:'SUBMITTED'}});if(adminUsers.length)await tx.notification.createMany({data:adminUsers.map(admin=>({userId:admin.id,type:'REQUIREMENT_CONFIRMED',title:'Yeni Tasarlayalım AI talebi',body:`${analysis.requirements.length} gereksinim kullanıcı tarafından onaylandı.`}))});await tx.auditLog.create({data:{workspaceId:auth.context.workspace.id,actorUserId:auth.context.user.id,action:'discovery.requirements.confirm',entityType:'DiscoveryConversation',entityId:id,metadata:{requirementCount:created.length}}});return created;});return NextResponse.json({ok:true,requirements});}catch(error){const code=error instanceof Error?error.message:'DISCOVERY_CONFIRM_FAILED';return NextResponse.json({ok:false,code},{status:code==='FEATURE_DISABLED'?403:400});}}
