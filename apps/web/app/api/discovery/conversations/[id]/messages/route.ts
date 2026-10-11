@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireUserApi } from '../../../../../../lib/auth';
@@ -30,7 +31,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       messages: history.map((message) => ({ role: message.role === 'assistant' ? 'assistant' as const : 'user' as const, content: message.content })),
     });
     const assistantMessage = await db.discoveryMessage.create({ data: { conversationId: id, role: 'assistant', content: result.text } });
-    await db.discoveryConversation.update({ where: { id }, data: { status: 'ACTIVE', confirmationState: 'UNCONFIRMED', aiInterpretation: undefined } });
+    await db.discoveryConversation.update({ where: { id }, data: { status: 'ACTIVE', confirmationState: 'UNCONFIRMED', aiInterpretation: Prisma.DbNull } });
     return NextResponse.json({ ok: true, userMessage, assistantMessage, routing: { providerId: result.providerId, modelId: result.modelId } });
   } catch (error) {
     const code = error instanceof Error ? error.message : 'DISCOVERY_MESSAGE_FAILED';
