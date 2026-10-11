@@ -35,7 +35,7 @@
 - Workspace tenant guard
 - Credential encryption/decryption
 
-## Pending validation / implementation
+## Pending validation / remaining implementation
 - Full Next.js production build after auth/provider persistence additions
 - Committed Prisma migration set and deploy validation against PostgreSQL
 - Distributed login rate limiting / session revocation strategy
