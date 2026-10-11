@@ -39,6 +39,7 @@ jobs:
           cp -a /tmp/magazala-import/tasarlayalim-commerce-os/. ./
           rm -rf bootstrap
           rm -f .github/workflows/bootstrap.yml
+          rm -f .github/workflows/ci.yml
 
       - name: Commit imported source
         shell: bash
