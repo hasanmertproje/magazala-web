@@ -1,3 +1,10 @@
+import { ProductIntelligenceStudio } from '../../../../components/product-intelligence-studio';
+
 export default function ProductIntelligencePage() {
-  return <div className="content"><h1 className="page-title">Product Intelligence</h1><p className="page-subtitle">Fikir üretimini gerçek kaynaklı araştırmadan ayırın. Kaynaksız tahminler pazar verisi olarak gösterilmez.</p><div className="grid"><section className="card span-6"><span className="badge active">IDEA MODE</span><h3 style={{marginTop:12}}>Yeni ürün fikirleri</h3><p>Üretim yeteneklerinize, kategori tercihlerinize ve tasarım hedeflerinize göre yaratıcı ürün fikirleri geliştirin.</p><button className="action primary" style={{marginTop:18}}>Fikir oturumu başlat</button></section><section className="card span-6"><span className="badge active">RESEARCH MODE</span><h3 style={{marginTop:12}}>Kaynaklı araştırma</h3><p>Web ve izin verilen veri kaynaklarından tarih, kaynak ve kanıt türüyle izlenebilir araştırma yürütün.</p><button className="action" style={{marginTop:18}}>Araştırma başlat</button></section></div></div>;
+  return <div className="content">
+    <span className="badge active">ACTIVE</span>
+    <h1 className="page-title" style={{marginTop:12}}>Product Intelligence</h1>
+    <p className="page-subtitle">Fikir üretimi ile kaynaklı araştırmayı birbirinden ayırın. Idea Mode yaratıcı öneri üretir; Research Mode gerçek kaynakları tarih ve kanıt türüyle kaydeder.</p>
+    <ProductIntelligenceStudio />
+  </div>;
 }

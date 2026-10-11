@@ -11,16 +11,32 @@ type ProviderCallResult = {
   outputUnits?: number;
 };
 
+type TextOperation =
+  | 'discovery.chat'
+  | 'discovery.analysis'
+  | 'product_intelligence.idea'
+  | 'product_intelligence.research_synthesis';
+
 type GenerateTextInput = {
   workspaceId: string;
   userId: string;
-  operation: 'discovery.chat' | 'discovery.analysis';
+  operation: TextOperation;
   messages: TextChatMessage[];
   systemPrompt?: string;
   jsonMode?: boolean;
 };
 
 type Candidate = Awaited<ReturnType<typeof loadCandidates>>[number];
+
+function operationSettings(operation: TextOperation) {
+  if (operation === 'discovery.analysis' || operation === 'product_intelligence.research_synthesis') {
+    return { temperature: 0.1, maxTokens: 2600 };
+  }
+  if (operation === 'product_intelligence.idea') {
+    return { temperature: 0.55, maxTokens: 2600 };
+  }
+  return { temperature: 0.35, maxTokens: 1400 };
+}
 
 async function loadCandidates() {
   const models = await db.aIModel.findMany({
@@ -46,6 +62,7 @@ async function loadCandidates() {
 }
 
 async function invokeNvidia(candidate: Candidate, secret: string, input: GenerateTextInput): Promise<ProviderCallResult> {
+  const settings = operationSettings(input.operation);
   const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -55,8 +72,8 @@ async function invokeNvidia(candidate: Candidate, secret: string, input: Generat
         { role: 'system', content: input.systemPrompt ?? TASARLAYALIM_AI_SYSTEM_PROMPT },
         ...input.messages,
       ],
-      temperature: input.operation === 'discovery.analysis' ? 0.1 : 0.35,
-      max_tokens: input.operation === 'discovery.analysis' ? 2400 : 1400,
+      temperature: settings.temperature,
+      max_tokens: settings.maxTokens,
       stream: false,
     }),
     cache: 'no-store',
@@ -73,6 +90,7 @@ async function invokeNvidia(candidate: Candidate, secret: string, input: Generat
 }
 
 async function invokeGemini(candidate: Candidate, secret: string, input: GenerateTextInput): Promise<ProviderCallResult> {
+  const settings = operationSettings(input.operation);
   const model = candidate.externalModelId.replace(/^models\//, '');
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
@@ -84,8 +102,8 @@ async function invokeGemini(candidate: Candidate, secret: string, input: Generat
         parts: [{ text: message.content }],
       })),
       generationConfig: {
-        temperature: input.operation === 'discovery.analysis' ? 0.1 : 0.35,
-        maxOutputTokens: input.operation === 'discovery.analysis' ? 2400 : 1400,
+        temperature: settings.temperature,
+        maxOutputTokens: settings.maxTokens,
         ...(input.jsonMode ? { responseMimeType: 'application/json' } : {}),
       },
     }),
