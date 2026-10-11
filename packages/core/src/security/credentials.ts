@@ -16,16 +16,26 @@ function base64ToBytes(input: string): Uint8Array {
   return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 }
 
+function copyToArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
+}
+
 export async function importCredentialKey(base64Key: string): Promise<CryptoKey> {
   const bytes = base64ToBytes(base64Key);
   if (bytes.byteLength !== 32) throw new Error('CREDENTIAL_KEY_MUST_BE_32_BYTES');
-  return crypto.subtle.importKey('raw', bytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+  return crypto.subtle.importKey('raw', copyToArrayBuffer(bytes), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
 }
 
 export async function encryptCredential(plaintext: string, key: CryptoKey): Promise<EncryptedSecret> {
   if (!plaintext) throw new Error('EMPTY_CREDENTIAL');
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(plaintext));
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: copyToArrayBuffer(iv) },
+    key,
+    copyToArrayBuffer(new TextEncoder().encode(plaintext)),
+  );
   return {
     version: 1,
     algorithm: 'AES-GCM',
@@ -37,9 +47,9 @@ export async function encryptCredential(plaintext: string, key: CryptoKey): Prom
 export async function decryptCredential(payload: EncryptedSecret, key: CryptoKey): Promise<string> {
   if (payload.version !== 1 || payload.algorithm !== 'AES-GCM') throw new Error('UNSUPPORTED_CREDENTIAL_FORMAT');
   const plaintext = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: base64ToBytes(payload.iv) },
+    { name: 'AES-GCM', iv: copyToArrayBuffer(base64ToBytes(payload.iv)) },
     key,
-    base64ToBytes(payload.ciphertext),
+    copyToArrayBuffer(base64ToBytes(payload.ciphertext)),
   );
   return new TextDecoder().decode(plaintext);
 }
