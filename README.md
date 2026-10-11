@@ -33,8 +33,8 @@ Bu repository production çekirdeğinin başlangıç implementasyonudur. Active/
 
 1. `.env.example` dosyasını `.env` olarak kopyalayın.
 2. `docker compose up -d` ile PostgreSQL, Redis ve MinIO başlatın.
-3. Bağımlılıkları kurun: `pnpm install`.
+3. Bağımlılıkları kurun: `npm install`.
 4. Prisma migration ve seed komutlarını çalıştırın.
-5. `pnpm dev`.
+5. `npm run dev`.
 
 > Provider anahtarları hiçbir zaman client bundle'a gönderilmez. Provider erişim sınıfı ve fiyat bilgisi zaman damgası ve resmi kaynakla saklanır.
