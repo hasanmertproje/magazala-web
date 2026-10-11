@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   quality:
+    if: github.event_name == 'pull_request' || hashFiles('package.json') != ''
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://magazala:magazala@localhost:5432/magazala
