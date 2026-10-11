@@ -92,7 +92,7 @@ async function invokeHuggingFace(row: ImageModelRow, secret: string, input: Imag
       ...(input.negativePrompt ? { negative_prompt: input.negativePrompt } : {}),
       ...(input.seed != null ? { seed: input.seed } : {}),
     },
-  });
+  }, { outputType: 'blob' });
   const bytes = new Uint8Array(await blob.arrayBuffer());
   if (bytes.byteLength === 0) throw new Error('IMAGE_PROVIDER_EMPTY_RESPONSE');
   return { bytes, mimeType: detectImageMime(bytes, blob.type) };
