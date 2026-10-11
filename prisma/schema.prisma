@@ -1,0 +1,583 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum WorkspaceRole { ADMIN USER }
+enum ModuleStatus { ACTIVE BETA PREVIEW DISABLED }
+enum ProviderHealthStatus { HEALTHY DEGRADED RATE_LIMITED QUOTA_EXHAUSTED AUTH_ERROR UNAVAILABLE DISABLED }
+enum RequirementCategory { BUG FEATURE_REQUEST CHANGE_REQUEST WORKFLOW_REQUIREMENT INTEGRATION UI_UX DATA_REQUIREMENT AUTOMATION QUESTION }
+enum RequirementStatus { NEW NEEDS_REVIEW NEEDS_CLARIFICATION ACCEPTED PLANNED IN_PROGRESS BETA RELEASED REJECTED MERGED }
+enum JobStatus { QUEUED RUNNING COMPLETED FAILED CANCELLED }
+enum ResearchMode { IDEA RESEARCH }
+enum EvidenceKind { DIRECT ESTIMATE INFERRED }
+enum ConnectorMode { MOCK STAGE PRODUCTION }
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String?
+  isSuperAdmin Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  memberships  WorkspaceMember[]
+  notifications Notification[]
+  auditLogs    AuditLog[] @relation("AuditActor")
+}
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  packageId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  package     Package? @relation(fields: [packageId], references: [id])
+  members     WorkspaceMember[]
+  overrides   WorkspaceFeatureOverride[]
+  quotas      UsageQuota[]
+  usage       UsageLedger[]
+  projects    Project[]
+  assets      Asset[]
+  discoveryConversations DiscoveryConversation[]
+  requirements Requirement[]
+  products    Product[]
+  connectors  StoreConnector[]
+  customFields ProductCustomFieldDefinition[]
+}
+
+model WorkspaceMember {
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(USER)
+  createdAt   DateTime @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([workspaceId, userId])
+  @@index([userId])
+}
+
+model Package {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  active      Boolean  @default(true)
+  priceMinor  Int?
+  currency    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  features    PackageFeature[]
+  workspaces  Workspace[]
+}
+
+model Feature {
+  id          String @id @default(cuid())
+  key         String @unique
+  label       String
+  module      String
+  status      ModuleStatus @default(ACTIVE)
+  description String?
+  packages    PackageFeature[]
+  overrides   WorkspaceFeatureOverride[]
+  quotas      UsageQuota[]
+}
+
+model PackageFeature {
+  packageId String
+  featureId String
+  enabled   Boolean @default(true)
+  limit     Int?
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  feature   Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  @@id([packageId, featureId])
+}
+
+model WorkspaceFeatureOverride {
+  workspaceId String
+  featureId   String
+  enabled     Boolean
+  limit       Int?
+  validUntil  DateTime?
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  feature     Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  @@id([workspaceId, featureId])
+}
+
+model UsageQuota {
+  id          String @id @default(cuid())
+  workspaceId String
+  featureId   String
+  periodKey   String
+  limit       Int
+  used        Int @default(0)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  feature     Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  @@unique([workspaceId, featureId, periodKey])
+}
+
+model Provider {
+  id                    String @id @default(cuid())
+  name                  String
+  slug                  String @unique
+  officialWebsite       String?
+  docsUrl               String?
+  keyAcquisitionUrl     String?
+  pricingClassification String
+  lastVerifiedAt        DateTime?
+  verificationSourceUrl String?
+  verificationNote      String?
+  commercialUseNote     String?
+  enabled               Boolean @default(false)
+  priority              Int @default(100)
+  fallbackPriority      Int @default(100)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  credentials           ProviderCredential[]
+  models                AIModel[]
+  health                ProviderHealth[]
+}
+
+model ProviderCredential {
+  id             String @id @default(cuid())
+  providerId     String
+  label          String
+  encryptedValue String
+  keyVersion     Int @default(1)
+  maskedHint     String
+  enabled        Boolean @default(true)
+  lastSuccessAt  DateTime?
+  lastErrorAt    DateTime?
+  lastErrorCode  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  provider       Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  @@index([providerId, enabled])
+}
+
+model AIModel {
+  id                   String @id @default(cuid())
+  providerId           String
+  externalModelId      String
+  name                 String
+  version              String?
+  enabled              Boolean @default(false)
+  commercialUseAllowed Boolean?
+  costScore            Float?
+  latencyMsP50         Int?
+  failureRate          Float?
+  provider             Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  capabilities         ModelCapability[]
+  benchmarkRuns        BenchmarkRun[]
+  @@unique([providerId, externalModelId])
+}
+
+model ModelCapability {
+  modelId    String
+  capability String
+  model      AIModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  @@id([modelId, capability])
+}
+
+model ProviderHealth {
+  id         String @id @default(cuid())
+  providerId String
+  status     ProviderHealthStatus
+  checkedAt  DateTime @default(now())
+  latencyMs  Int?
+  detail     String?
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  @@index([providerId, checkedAt])
+}
+
+model BenchmarkSet {
+  id        String @id @default(cuid())
+  name      String
+  version   String
+  createdAt DateTime @default(now())
+  runs      BenchmarkRun[]
+  @@unique([name, version])
+}
+
+model BenchmarkRun {
+  id             String @id @default(cuid())
+  benchmarkSetId String
+  modelId        String
+  category       String
+  score          Float?
+  automaticScore Float?
+  manualScore    Float?
+  createdAt      DateTime @default(now())
+  set            BenchmarkSet @relation(fields: [benchmarkSetId], references: [id], onDelete: Cascade)
+  model          AIModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  @@index([modelId, category])
+}
+
+model UsageLedger {
+  id              String @id @default(cuid())
+  workspaceId     String
+  userId          String
+  providerId      String
+  modelId         String
+  operation       String
+  requestId       String @unique
+  startedAt       DateTime
+  finishedAt      DateTime?
+  success         Boolean?
+  inputUnits      Int?
+  outputUnits     Int?
+  imagesGenerated Int?
+  costAmount      Decimal?
+  costCurrency    String?
+  freeQuotaUnits  Int?
+  latencyMs       Int?
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  @@index([workspaceId, startedAt])
+  @@index([providerId, modelId, startedAt])
+}
+
+model Project {
+  id          String @id @default(cuid())
+  workspaceId String
+  name        String
+  description String?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  assets      Asset[]
+  generations Generation[]
+  researchSessions ProductResearchSession[]
+  @@index([workspaceId, updatedAt])
+}
+
+model Asset {
+  id          String @id @default(cuid())
+  workspaceId String
+  projectId   String?
+  createdById String
+  kind        String
+  storageKey  String
+  originalName String?
+  mimeType    String
+  sizeBytes   BigInt
+  checksum    String
+  width       Int?
+  height      Int?
+  colorSpace  String?
+  transparency Boolean?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  @@unique([workspaceId, checksum, storageKey])
+  @@index([workspaceId, createdAt])
+}
+
+model Generation {
+  id              String @id @default(cuid())
+  workspaceId     String
+  projectId       String?
+  userId          String
+  prompt          String
+  optimizedPrompt String?
+  operation       String
+  qualityProfile  String
+  status          JobStatus @default(QUEUED)
+  selectedModelId String?
+  selectedProviderId String?
+  routerReason    Json?
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+  project         Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  attempts        GenerationAttempt[]
+  @@index([workspaceId, createdAt])
+}
+
+model GenerationAttempt {
+  id           String @id @default(cuid())
+  generationId String
+  providerId   String
+  modelId      String
+  attemptNo    Int
+  startedAt    DateTime
+  finishedAt   DateTime?
+  success      Boolean?
+  errorCode    String?
+  latencyMs    Int?
+  generation   Generation @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  @@unique([generationId, attemptNo])
+}
+
+model ProductResearchSession {
+  id          String @id @default(cuid())
+  workspaceId String
+  projectId   String?
+  userId      String
+  mode        ResearchMode
+  query       String
+  createdAt   DateTime @default(now())
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  sources     ResearchSource[]
+  opportunities Opportunity[]
+  @@index([workspaceId, createdAt])
+}
+
+model ResearchSource {
+  id         String @id @default(cuid())
+  sessionId  String
+  url        String
+  title      String
+  retrievedAt DateTime
+  evidenceKind EvidenceKind
+  confidence Float
+  session    ProductResearchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model Opportunity {
+  id         String @id @default(cuid())
+  sessionId  String
+  title      String
+  rationale  String
+  evidence   Json
+  risks      Json
+  createdAt  DateTime @default(now())
+  session    ProductResearchSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model DiscoveryConversation {
+  id            String @id @default(cuid())
+  workspaceId   String
+  userId        String
+  title         String?
+  mode          String
+  status        String @default("DRAFT")
+  confirmationState String @default("UNCONFIRMED")
+  aiInterpretation Json?
+  startedAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  messages      DiscoveryMessage[]
+  requirements  Requirement[]
+  @@index([workspaceId, updatedAt])
+}
+
+model DiscoveryMessage {
+  id             String @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  createdAt      DateTime @default(now())
+  conversation   DiscoveryConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  @@index([conversationId, createdAt])
+}
+
+model Requirement {
+  id                   String @id @default(cuid())
+  workspaceId          String
+  conversationId       String
+  title                String
+  module               String
+  category             RequirementCategory
+  userPriority         String?
+  aiPrioritySuggestion String?
+  adminPriority        String?
+  description          String
+  confirmedRequirements Json
+  acceptanceSuggestions Json
+  openQuestions        Json
+  risks                Json
+  dependencies         Json
+  outOfScope           Json
+  userConfirmedAt      DateTime?
+  status               RequirementStatus @default(NEW)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  workspace            Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversation         DiscoveryConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  relationsFrom        RequirementRelation[] @relation("RequirementFrom")
+  relationsTo          RequirementRelation[] @relation("RequirementTo")
+  exports              RequirementExport[]
+  @@index([workspaceId, status, updatedAt])
+}
+
+model RequirementRelation {
+  fromId String
+  toId   String
+  type   String
+  from   Requirement @relation("RequirementFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to     Requirement @relation("RequirementTo", fields: [toId], references: [id], onDelete: Cascade)
+  @@id([fromId, toId, type])
+}
+
+model RequirementExport {
+  id            String @id @default(cuid())
+  requirementId String
+  format        String
+  storageKey    String
+  createdAt     DateTime @default(now())
+  requirement   Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, readAt, createdAt])
+}
+
+model AuditLog {
+  id          String @id @default(cuid())
+  workspaceId String?
+  actorUserId String?
+  action      String
+  entityType  String
+  entityId    String?
+  requestId   String?
+  ipHash      String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  actor       User? @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  @@index([workspaceId, createdAt])
+}
+
+model BackgroundJobRecord {
+  id          String @id @default(cuid())
+  workspaceId String?
+  type        String
+  status      JobStatus @default(QUEUED)
+  idempotencyKey String? @unique
+  input       Json?
+  output      Json?
+  errorCode   String?
+  createdAt   DateTime @default(now())
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  @@index([status, createdAt])
+}
+
+model Product {
+  id              String @id @default(cuid())
+  workspaceId     String
+  name            String
+  description     String?
+  internalSku     String?
+  internalBarcode String?
+  gtinEan         String?
+  status          String @default("DRAFT")
+  cost            Decimal?
+  price           Decimal?
+  currency        String?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  customValues    ProductCustomFieldValue[]
+  barcodes        BarcodeRecord[]
+  marketplaceListings MarketplaceListing[]
+  @@unique([workspaceId, internalSku])
+  @@unique([workspaceId, internalBarcode])
+  @@index([workspaceId, updatedAt])
+}
+
+model ProductCustomFieldDefinition {
+  id          String @id @default(cuid())
+  workspaceId String
+  key         String
+  label       String
+  type        String
+  required    Boolean @default(false)
+  position    Int @default(0)
+  schemaVersion Int @default(1)
+  config      Json?
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  values      ProductCustomFieldValue[]
+  @@unique([workspaceId, key])
+}
+
+model ProductCustomFieldValue {
+  productId   String
+  definitionId String
+  value       Json
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  definition  ProductCustomFieldDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  @@id([productId, definitionId])
+}
+
+model BarcodeRecord {
+  id        String @id @default(cuid())
+  productId String
+  type      String
+  value     String
+  createdAt DateTime @default(now())
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  @@unique([type, value])
+}
+
+model ImportJob {
+  id          String @id @default(cuid())
+  workspaceId String
+  status      JobStatus @default(QUEUED)
+  format      String
+  mapping     Json
+  duplicatePolicy String
+  sourceAssetId String?
+  resultAssetId String?
+  errorReportAssetId String?
+  createdAt   DateTime @default(now())
+  finishedAt  DateTime?
+  @@index([workspaceId, createdAt])
+}
+
+model ExportJob {
+  id          String @id @default(cuid())
+  workspaceId String
+  status      JobStatus @default(QUEUED)
+  format      String
+  filters     Json?
+  resultAssetId String?
+  createdAt   DateTime @default(now())
+  finishedAt  DateTime?
+  @@index([workspaceId, createdAt])
+}
+
+model StoreConnector {
+  id          String @id @default(cuid())
+  workspaceId String
+  provider    String
+  name        String
+  mode        ConnectorMode @default(MOCK)
+  enabled     Boolean @default(false)
+  encryptedConfig String?
+  lastSyncAt  DateTime?
+  lastErrorCode String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  listings    MarketplaceListing[]
+  @@index([workspaceId, provider])
+}
+
+model MarketplaceListing {
+  id                  String @id @default(cuid())
+  masterProductId     String
+  connectorId         String
+  marketplaceProductId String?
+  marketplaceVariantId String?
+  externalSku         String?
+  externalBarcode     String?
+  syncStatus          String @default("NOT_CONNECTED")
+  product             Product @relation(fields: [masterProductId], references: [id], onDelete: Cascade)
+  connector           StoreConnector @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  @@unique([connectorId, marketplaceProductId, marketplaceVariantId])
+  @@index([masterProductId])
+}

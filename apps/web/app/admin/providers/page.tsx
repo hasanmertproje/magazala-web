@@ -1,0 +1,8 @@
+const providers = [
+  { name: 'NVIDIA NIM', classification: 'FREE_ENDPOINT', use: 'Metin, reasoning ve uygun multimodal modeller', verified: 'Doğrulama gerekli' },
+  { name: 'Hugging Face Inference Providers', classification: 'FREE_CREDIT', use: 'Çoklu model ve inference yönlendirme', verified: 'Doğrulama gerekli' },
+  { name: 'Cloudflare Workers AI', classification: 'NEEDS_REVERIFY', use: 'Uygun modellerde inference ve yardımcı görevler', verified: 'Doğrulama gerekli' },
+  { name: 'Google Gemini Developer API', classification: 'NEEDS_REVERIFY', use: 'Metin/reasoning; görsel üretim fiyatlandırması ayrı değerlendirilir', verified: 'Doğrulama gerekli' },
+  { name: 'Recraft API', classification: 'NEEDS_REVERIFY', use: 'Tasarım ve native vector adayı', verified: 'Doğrulama gerekli' },
+];
+export default function ProvidersAdminPage(){return <div className="content"><h1 className="page-title">AI Provider Center</h1><p className="page-subtitle">Sağlayıcı anahtarları, yetenekleri, erişim türleri, doğrulama kaynakları ve router öncelikleri tek merkezden yönetilir.</p><div className="grid"><section className="card span-12"><div style={{display:'grid',gridTemplateColumns:'1.4fr 1fr 2fr 1fr',gap:12,color:'var(--muted)',fontSize:12,paddingBottom:10,borderBottom:'1px solid var(--line)'}}><span>Sağlayıcı</span><span>Erişim</span><span>Kullanım</span><span>Doğrulama</span></div>{providers.map((p)=><div key={p.name} style={{display:'grid',gridTemplateColumns:'1.4fr 1fr 2fr 1fr',gap:12,padding:'14px 0',borderBottom:'1px solid var(--line)'}}><strong>{p.name}</strong><span className="badge" style={{width:'fit-content'}}>{p.classification}</span><span>{p.use}</span><span style={{color:'var(--muted)'}}>{p.verified}</span></div>)}</section></div></div>}
