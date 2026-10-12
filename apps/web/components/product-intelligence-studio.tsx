@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 type Idea = { id: string; title: string; rationale: string; evidence: unknown; risks: unknown };
 type Source = { id: string; title: string; url: string; retrievedAt: string; evidenceKind: string; confidence: number; position?: number; snippet?: string; engine?: string | null; evidenceNote?: string };
 type Opportunity = { id: string; title: string; rationale: string; evidence: unknown; risks: unknown };
 type EvidencePolicy = { kind: string; fullPageVerified: boolean };
+type SavedSession = { id:string; mode:'IDEA'|'RESEARCH'; query:string; projectId:string|null; createdAt:string; sourceCount:number; opportunityCount:number; previewTitles:string[] };
+type PersistedSession = { id:string; mode:'IDEA'|'RESEARCH'; query:string; projectId:string|null; createdAt:string; sources:Source[]; opportunities:Opportunity[]; evidencePolicy:EvidencePolicy|null };
 
 const errorLabels: Record<string,string> = {
   AI_MODEL_NOT_CONFIGURED: 'Fikir üretimi için etkin bir metin modeli yapılandırılmamış.',
@@ -14,6 +16,7 @@ const errorLabels: Record<string,string> = {
   AI_PROVIDER_UNAVAILABLE: 'Yapılandırılmış yapay zekâ sağlayıcıları şu anda yanıt vermiyor.',
   RESEARCH_PROVIDER_NOT_CONFIGURED: 'Kaynaklı araştırma için SearXNG bağlantısı henüz yapılandırılmamış.',
   RESEARCH_NO_SOURCES: 'Bu sorgu için doğrulanabilir arama sonucu bulunamadı.',
+  PRODUCT_INTELLIGENCE_SESSION_NOT_FOUND: 'Bu kayıt artık aktif çalışma alanında bulunmuyor.',
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -60,33 +63,84 @@ export function ProductIntelligenceStudio() {
   const [opportunities,setOpportunities] = useState<Opportunity[]>([]);
   const [synthesisAvailable,setSynthesisAvailable] = useState<boolean | null>(null);
   const [evidencePolicy,setEvidencePolicy] = useState<EvidencePolicy | null>(null);
+  const [savedSessions,setSavedSessions] = useState<SavedSession[]>([]);
+  const [historyLoading,setHistoryLoading] = useState(true);
+  const [historyError,setHistoryError] = useState<string | null>(null);
+  const [openingSessionId,setOpeningSessionId] = useState<string | null>(null);
+  const [activeSessionId,setActiveSessionId] = useState<string | null>(null);
+  const [loadedFromHistory,setLoadedFromHistory] = useState(false);
+
+  const refreshHistory = useCallback(async () => {
+    setHistoryLoading(true); setHistoryError(null);
+    try {
+      const response = await fetch('/api/product-intelligence/history?limit=16', { cache:'no-store' });
+      const body = await response.json() as { ok?:boolean; code?:string; sessions?:SavedSession[] };
+      if (!response.ok || !body.ok) throw new Error(body.code || 'HISTORY_LOAD_FAILED');
+      setSavedSessions(body.sessions ?? []);
+    } catch (err) {
+      const code = err instanceof Error ? err.message : 'HISTORY_LOAD_FAILED';
+      setHistoryError(`Kaydedilmiş çalışmalar yüklenemedi (${code}).`);
+    } finally { setHistoryLoading(false); }
+  }, []);
+
+  useEffect(() => { void refreshHistory(); }, [refreshHistory]);
 
   async function submit() {
     if (query.trim().length < 3 || loading) return;
-    setLoading(true); setError(null); setIdeas([]); setSources([]); setOpportunities([]); setSynthesisAvailable(null); setEvidencePolicy(null);
+    setLoading(true); setError(null); setIdeas([]); setSources([]); setOpportunities([]); setSynthesisAvailable(null); setEvidencePolicy(null); setLoadedFromHistory(false); setActiveSessionId(null);
     try {
       const endpoint = mode === 'IDEA' ? '/api/product-intelligence/idea' : '/api/product-intelligence/research';
       const response = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(mode === 'IDEA' ? { query, context: context || undefined } : { query }) });
-      const body = await response.json() as { ok?:boolean; code?:string; ideas?:Idea[]; sources?:Source[]; opportunities?:Opportunity[]; synthesis?:{available:boolean}; evidencePolicy?:EvidencePolicy };
+      const body = await response.json() as { ok?:boolean; code?:string; sessionId?:string; ideas?:Idea[]; sources?:Source[]; opportunities?:Opportunity[]; synthesis?:{available:boolean}; evidencePolicy?:EvidencePolicy };
       if (!response.ok || !body.ok) throw new Error(body.code || 'REQUEST_FAILED');
-      setIdeas(body.ideas ?? []); setSources(body.sources ?? []); setOpportunities(body.opportunities ?? []); setSynthesisAvailable(body.synthesis?.available ?? null); setEvidencePolicy(body.evidencePolicy ?? null);
+      setIdeas(body.ideas ?? []); setSources(body.sources ?? []); setOpportunities(body.opportunities ?? []); setSynthesisAvailable(body.synthesis?.available ?? null); setEvidencePolicy(body.evidencePolicy ?? null); setActiveSessionId(body.sessionId ?? null);
+      await refreshHistory();
     } catch (err) {
       const code = err instanceof Error ? err.message : 'REQUEST_FAILED';
       setError(errorLabels[code] ?? `İşlem tamamlanamadı (${code}).`);
     } finally { setLoading(false); }
   }
 
+  async function openSession(id:string) {
+    if (openingSessionId) return;
+    setOpeningSessionId(id); setError(null);
+    try {
+      const response = await fetch(`/api/product-intelligence/sessions/${encodeURIComponent(id)}`, { cache:'no-store' });
+      const body = await response.json() as { ok?:boolean; code?:string; session?:PersistedSession };
+      if (!response.ok || !body.ok || !body.session) throw new Error(body.code || 'SESSION_LOAD_FAILED');
+      const session = body.session;
+      setMode(session.mode); setQuery(session.query); setContext(''); setActiveSessionId(session.id); setLoadedFromHistory(true); setEvidencePolicy(session.evidencePolicy);
+      if (session.mode === 'IDEA') {
+        setIdeas(session.opportunities); setSources([]); setOpportunities([]); setSynthesisAvailable(null);
+      } else {
+        setIdeas([]); setSources(session.sources); setOpportunities(session.opportunities); setSynthesisAvailable(session.opportunities.length ? true : null);
+      }
+      window.scrollTo({top:0,behavior:'smooth'});
+    } catch (err) {
+      const code = err instanceof Error ? err.message : 'SESSION_LOAD_FAILED';
+      setError(errorLabels[code] ?? `Kayıt açılamadı (${code}).`);
+    } finally { setOpeningSessionId(null); }
+  }
+
   return <div>
-    <div style={{display:'flex',gap:8,margin:'18px 0'}}>
+    <div style={{display:'flex',gap:8,margin:'18px 0',alignItems:'center',flexWrap:'wrap'}}>
       <button className={`action ${mode==='IDEA'?'primary':''}`} onClick={()=>setMode('IDEA')}>Fikir Modu</button>
       <button className={`action ${mode==='RESEARCH'?'primary':''}`} onClick={()=>setMode('RESEARCH')}>Araştırma Modu</button>
+      {activeSessionId ? <span className={`badge ${loadedFromHistory?'':'active'}`}>{loadedFromHistory?'KAYITLI OTURUM':'YENİ OTURUM'} · #{activeSessionId.slice(-7)}</span> : null}
     </div>
     <section className="card">
       <label style={{display:'block',fontWeight:700,marginBottom:8}}>{mode==='IDEA'?'Ne tür ürünler geliştirmek istiyorsunuz?':'Neyi araştırmak istiyorsunuz?'}</label>
       <textarea value={query} onChange={e=>setQuery(e.target.value)} placeholder={mode==='IDEA'?'Örn. Vinyl sticker üretiyorum; özgün ve seri üretime uygun yeni koleksiyon fikirleri istiyorum.':'Örn. Türkiye ve global pazarda kahve temalı sticker tasarım eğilimleri'} style={{width:'100%',minHeight:110,background:'#0b0e14',border:'1px solid var(--line)',borderRadius:12,color:'white',padding:14,resize:'vertical'}} />
-      {mode==='IDEA' ? <textarea value={context} onChange={e=>setContext(e.target.value)} placeholder="İsteğe bağlı: üretim imkanları, hedef kitle, fiyat aralığı, kaçınılacak konular…" style={{width:'100%',minHeight:82,marginTop:10,background:'#0b0e14',border:'1px solid var(--line)',borderRadius:12,color:'white',padding:14,resize:'vertical'}} /> : null}
-      <button className="action primary" onClick={submit} disabled={loading || query.trim().length<3} style={{marginTop:12}}>{loading?'İşleniyor…':mode==='IDEA'?'Fikirleri geliştir':'Kaynaklı araştırmayı başlat'}</button>
+      {mode==='IDEA' ? <><textarea value={context} onChange={e=>setContext(e.target.value)} placeholder="İsteğe bağlı: üretim imkanları, hedef kitle, fiyat aralığı, kaçınılacak konular…" style={{width:'100%',minHeight:82,marginTop:10,background:'#0b0e14',border:'1px solid var(--line)',borderRadius:12,color:'white',padding:14,resize:'vertical'}} />{loadedFromHistory ? <p style={{margin:'8px 0 0',color:'var(--muted)',fontSize:11}}>Bu oturumun eski ek bağlam alanı kalıcı olarak saklanmadığı için yeniden oluşturulmadı. Kaydedilmiş çıktı aynen gösteriliyor.</p> : null}</> : null}
+      <button className="action primary" onClick={submit} disabled={loading || query.trim().length<3} style={{marginTop:12}}>{loading?'İşleniyor…':mode==='IDEA'?'Yeni fikir çalışması oluştur':'Yeni kaynaklı araştırma başlat'}</button>
+      {loadedFromHistory ? <p style={{margin:'10px 0 0',color:'var(--muted)',fontSize:12}}>Kaydedilmiş oturumu görüntülüyorsunuz. Yukarıdaki buton yeni bir çalışma ve yeni AI/API kullanımı oluşturur.</p> : null}
       {error ? <p style={{color:'#ff9b9b',marginTop:14}}>{error}</p> : null}
+    </section>
+
+    <section className="card" style={{marginTop:18}}>
+      <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap'}}><div><h3 style={{margin:0}}>Kaydedilmiş çalışmalar</h3><p className="page-subtitle" style={{margin:'5px 0 0'}}>Daha önce üretilen fikir ve araştırmaları yeniden API çalıştırmadan açın.</p></div><button className="action" type="button" onClick={()=>void refreshHistory()} disabled={historyLoading}>{historyLoading?'Yükleniyor…':'Yenile'}</button></div>
+      {historyError ? <p style={{color:'#ff9b9b'}}>{historyError}</p> : null}
+      {!historyLoading && savedSessions.length===0 ? <div className="empty" style={{marginTop:12}}><div><strong>Kaydedilmiş çalışma yok</strong><br/><span>Oluşturduğunuz fikir ve araştırma oturumları burada görünecek.</span></div></div> : <div style={{display:'grid',gap:9,marginTop:12}}>{savedSessions.map(session=><div key={session.id} style={{padding:12,border:'1px solid var(--line)',borderRadius:12,display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap',background:activeSessionId===session.id?'rgba(255,255,255,.025)':'transparent'}}><div style={{minWidth:0,flex:'1 1 360px'}}><div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}><span className={`badge ${session.mode==='RESEARCH'?'active':''}`}>{session.mode==='IDEA'?'FİKİR':'ARAŞTIRMA'}</span><strong style={{fontSize:13}}>{session.query}</strong></div><div style={{color:'var(--muted)',fontSize:11,marginTop:5}}>{new Date(session.createdAt).toLocaleString('tr-TR')} · {session.opportunityCount} sonuç{session.mode==='RESEARCH'?` · ${session.sourceCount} kaynak`:''}</div>{session.previewTitles.length?<div style={{color:'var(--muted)',fontSize:11,marginTop:4,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{session.previewTitles.join(' · ')}</div>:null}</div><button className="action" type="button" disabled={openingSessionId!==null} onClick={()=>void openSession(session.id)}>{openingSessionId===session.id?'Açılıyor…':activeSessionId===session.id?'Tekrar aç':'Aç'}</button></div>)}</div>}
     </section>
 
     {ideas.length ? <div className="grid">{ideas.map(idea=>{
