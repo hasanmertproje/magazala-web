@@ -2,7 +2,7 @@ import { compare } from 'bcryptjs';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '../../../../lib/db';
-import { assertSameOrigin, isHtmlForm } from '../../../../lib/request-security';
+import { assertSameOrigin, isHtmlForm, publicRequestUrl } from '../../../../lib/request-security';
 import { issueSessionToken, SESSION_COOKIE, sessionCookieOptions } from '../../../../lib/session';
 
 const schema = z.object({
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     if (!valid || !user) {
       await delay(250);
       if (formRequest) {
-        const url = new URL('/login', request.url);
+        const url = publicRequestUrl('/login', request);
         url.searchParams.set('error', 'INVALID_CREDENTIALS');
         if (safeNext(input.next) !== '/') url.searchParams.set('next', safeNext(input.next));
         return NextResponse.redirect(url, 303);
@@ -38,14 +38,14 @@ export async function POST(request: Request) {
     }
 
     const response = formRequest
-      ? NextResponse.redirect(new URL(safeNext(input.next), request.url), 303)
+      ? NextResponse.redirect(publicRequestUrl(safeNext(input.next), request), 303)
       : NextResponse.json({ ok: true });
     response.cookies.set(SESSION_COOKIE, issueSessionToken(user.id), sessionCookieOptions());
     await db.auditLog.create({ data: { actorUserId: user.id, action: 'auth.login', entityType: 'User', entityId: user.id } });
     return response;
   } catch (error) {
     const code = error instanceof Error ? error.message : 'LOGIN_FAILED';
-    if (formRequest) return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(code)}`, request.url), 303);
+    if (formRequest) return NextResponse.redirect(publicRequestUrl(`/login?error=${encodeURIComponent(code)}`, request), 303);
     return NextResponse.json({ ok: false, code }, { status: 400 });
   }
 }
