@@ -14,6 +14,16 @@ Provider Center bir API anahtarı listesi değildir. Her sağlayıcı için capa
 ## Güvenlik
 Credential değerleri veritabanında authenticated encryption ile saklanır. Kullanıcıya yalnızca maskelenmiş metadata gösterilir. Raw key frontend response'larına dahil edilmez.
 
+## Model keşfi
+Admin, desteklenen sağlayıcılarda gerçek model kimliklerini sağlayıcı API'sinden sunucu tarafında keşfedebilir. API anahtarı tarayıcıya gönderilmez.
+
+Desteklenen ilk keşif akışları:
+- NVIDIA NIM: model ID listesi alınır; katalog güvenilir görev tipi vermediği için capability otomatik atanmaz.
+- Google Gemini: `supportedGenerationMethods` metadata'sı görüntülenir; `generateContent` varsa `text_generation` yalnız öneri olarak işaretlenir.
+- Cloudflare Workers AI: provider'ın task metadata'sı başlangıç capability önerisine çevrilebilir; bunun için sunucuda `CLOUDFLARE_ACCOUNT_ID` gerekir.
+
+Model keşfi hiçbir zaman model lisansı, ticari kullanım hakkı, gerçek kalite veya tüm yeteneklerin doğrulandığı anlamına gelmez. Admin, modeli etkinleştirmeden önce capability ve ticari kullanım koşullarını doğrulamalıdır.
+
 ## İlk adaylar
 NVIDIA NIM, Hugging Face Inference Providers, Cloudflare Workers AI, Google Gemini Developer API ve Recraft adapter olarak değerlendirilebilir. Seed kayıtları kesin fiyat/ücretsiz kota iddiası taşımaz; resmi kaynakla son doğrulama yapılmadan ACTIVE ücretsiz provider olarak işaretlenmez.
 
