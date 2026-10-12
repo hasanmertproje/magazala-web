@@ -1,4 +1,5 @@
 import { db } from '../../../lib/db';
+import { runtimeSupport } from '../../../lib/provider-runtime';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,15 +16,26 @@ const usageHints: Record<string, { title: string; steps: string[] }> = {
   },
   'nvidia-nim': {
     title: 'Metin ve analiz kullanımı',
-    steps: ['build.nvidia.com üzerinden geliştirici API anahtarı alın.', 'Model Registry içine text_generation destekli modeli ekleyin.', 'Geliştirici erişimini production ticari lisansı olarak değerlendirmeyin.'],
+    steps: ['build.nvidia.com üzerinden geliştirici API anahtarı alın.', 'Model Registry içindeki model keşfini kullanın veya doğrulanmış model ID’sini ekleyin.', 'text_generation yeteneğini yalnız model gerçekten destekliyorsa işaretleyin.', 'Geliştirici erişimini production ticari lisansı olarak değerlendirmeyin.'],
   },
   'google-gemini': {
     title: 'Metin modeli kullanımı',
-    steps: ['Google AI Studio üzerinden API anahtarı oluşturun.', 'Metin/reasoning modelini Model Registry içine ekleyin.', 'Görsel üretim için ücretsiz katman varmış gibi varsaymayın; model bazında fiyat bilgisini tekrar doğrulayın.'],
+    steps: ['Google AI Studio üzerinden API anahtarı oluşturun.', 'Model Registry içindeki model keşfi ile kullanılabilir modelleri alın.', 'Metin/reasoning modelinin capability bilgisini doğrulayın.', 'Görsel üretim için ücretsiz katman varmış gibi varsaymayın; model bazında fiyat bilgisini tekrar doğrulayın.'],
+  },
+  'cloudflare-workers-ai': {
+    title: 'Metin ve görsel runtime kurulumu',
+    steps: [
+      'Cloudflare Dashboard içinden Workers AI REST API erişimi için uygun API token oluşturun.',
+      'Cloudflare Account ID değerini sunucu ortamında CLOUDFLARE_ACCOUNT_ID olarak tanımlayın; API tokenı env dosyasına koymayın.',
+      'API tokenı aşağıdaki API Anahtarları alanından ekleyin ve bağlantıyı test edin.',
+      'Model Registry içindeki model keşfi ile güncel model kataloğunu alın.',
+      'Metin modellerinde text_generation, görsel modellerinde text_to_image capability bilgisini model dokümantasyonuyla doğrulayın.',
+      'Görsel modeli ticari kullanım açısından ayrıca doğrulamadan “Ticari kullanım doğrulandı” seçeneğini açmayın.',
+    ],
   },
   'recraft': {
     title: 'Vektör ve tasarım odaklı kullanım',
-    steps: ['Recraft API hesabından anahtar oluşturun.', 'Native vector destekleyen modeli capability bilgisiyle ayrı kaydedin.', 'Web uygulamasındaki ücretsiz kullanım ile API fiyatlandırmasını birbirine karıştırmayın.'],
+    steps: ['Recraft API hesabından anahtar oluşturun.', 'Native vector destekleyen modeli capability bilgisiyle ayrı kaydedin.', 'Web uygulamasındaki ücretsiz kullanım ile API fiyatlandırmasını birbirine karıştırmayın.', 'Bu sağlayıcı için uygulama runtime adaptörü henüz bağlı değil; kayıtlı capability tek başına üretim yapmaz.'],
   },
 };
 
@@ -40,7 +52,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams: Pr
 
   return <div className="content">
     <div style={{display:'flex',justifyContent:'space-between',gap:16,alignItems:'flex-start',flexWrap:'wrap'}}>
-      <div><h1 className="page-title">AI Provider Center</h1><p className="page-subtitle">Sağlayıcı, anahtar, doğrulama kaynağı, kullanım sınıfı, model yetenekleri ve bağlantı sağlığı tek merkezden yönetilir. Ücretsiz kullanım bilgileri kalıcı varsayım değildir.</p></div>
+      <div><h1 className="page-title">AI Provider Center</h1><p className="page-subtitle">Sağlayıcı, anahtar, doğrulama kaynağı, kullanım sınıfı, gerçek runtime desteği, model yetenekleri ve bağlantı sağlığı tek merkezden yönetilir. Ücretsiz kullanım bilgileri kalıcı varsayım değildir.</p></div>
       <form action="/api/admin/providers/seed-guides" method="post"><button className="action primary" type="submit">Doğrulanmış rehberleri eşitle</button></form>
     </div>
     {params.notice ? <section className="card" style={{marginTop:16}}>İşlem tamamlandı{params.status ? ` · ${params.status}` : ''}{params.count ? ` · ${params.count} kayıt` : ''}.</section> : null}
@@ -51,15 +63,16 @@ export default async function ProvidersPage({ searchParams }: { searchParams: Pr
     <div style={{display:'grid',gap:18,marginTop:18}}>{providers.map((provider) => {
       const health = provider.health[0];
       const hint = usageHints[provider.slug];
+      const runtime = runtimeSupport(provider.slug);
       return <section className="card" key={provider.id}>
         <div style={{display:'flex',justifyContent:'space-between',gap:14,alignItems:'flex-start',flexWrap:'wrap'}}>
-          <div><h2 style={{margin:'0 0 6px'}}>{provider.name}</h2><div style={{display:'flex',gap:7,flexWrap:'wrap'}}><span className="badge">{provider.pricingClassification}</span><span className={`badge ${provider.enabled?'active':''}`}>{provider.enabled?'ETKİN':'PASİF'}</span><span className="badge">{health?.status ?? 'TEST EDİLMEDİ'}</span></div></div>
+          <div><h2 style={{margin:'0 0 6px'}}>{provider.name}</h2><div style={{display:'flex',gap:7,flexWrap:'wrap'}}><span className="badge">{provider.pricingClassification}</span><span className={`badge ${provider.enabled?'active':''}`}>{provider.enabled?'ETKİN':'PASİF'}</span><span className="badge">{health?.status ?? 'TEST EDİLMEDİ'}</span>{runtime.text ? <span className="badge active">METİN RUNTIME</span> : null}{runtime.image ? <span className="badge active">GÖRSEL RUNTIME</span> : null}{runtime.modelDiscovery ? <span className="badge active">MODEL KEŞFİ</span> : null}{!runtime.text && !runtime.image ? <span className="badge">RUNTIME ADAPTÖRÜ YOK</span> : null}</div></div>
           <div style={{display:'flex',gap:8}}><form action={`/api/admin/providers/${provider.id}/test`} method="post"><button className="action" type="submit" disabled={provider.credentials.every(c=>!c.enabled)}>Bağlantıyı test et</button></form><form action={`/api/admin/providers/${provider.id}/toggle`} method="post"><button className={`action ${provider.enabled?'':'primary'}`} type="submit">{provider.enabled?'Devre dışı bırak':'Etkinleştir'}</button></form></div>
         </div>
 
         <div className="grid" style={{marginTop:10}}>
           <div className="span-6"><h3>Doğrulama ve erişim</h3><div style={{display:'grid',gap:8,color:'var(--muted)',fontSize:14}}><div>Son doğrulama: <strong style={{color:'var(--text)'}}>{provider.lastVerifiedAt ? provider.lastVerifiedAt.toISOString().slice(0,10) : 'Doğrulama gerekli'}</strong></div><div>{provider.verificationNote || 'Doğrulama notu bulunmuyor.'}</div>{provider.commercialUseNote ? <div><strong style={{color:'var(--text)'}}>Ticari kullanım:</strong> {provider.commercialUseNote}</div> : null}<div style={{display:'flex',gap:12,flexWrap:'wrap'}}>{provider.officialWebsite ? <a href={provider.officialWebsite} target="_blank" rel="noreferrer" style={{color:'var(--accent)'}}>Resmi site ↗</a> : null}{provider.docsUrl ? <a href={provider.docsUrl} target="_blank" rel="noreferrer" style={{color:'var(--accent)'}}>API dokümantasyonu ↗</a> : null}{provider.keyAcquisitionUrl ? <a href={provider.keyAcquisitionUrl} target="_blank" rel="noreferrer" style={{color:'var(--accent)'}}>API anahtarı al ↗</a> : null}{provider.verificationSourceUrl ? <a href={provider.verificationSourceUrl} target="_blank" rel="noreferrer" style={{color:'var(--accent)'}}>Doğrulama kaynağı ↗</a> : null}</div></div></div>
-          <div className="span-6"><h3>Çalışma durumu</h3><div style={{display:'grid',gap:8,color:'var(--muted)',fontSize:14}}><div>Kayıtlı model: <strong style={{color:'var(--text)'}}>{provider.models.length}</strong></div><div>Etkin API anahtarı: <strong style={{color:'var(--text)'}}>{provider.credentials.filter(c=>c.enabled).length}</strong></div><div>Son bağlantı testi: <strong style={{color:'var(--text)'}}>{health?.checkedAt ? health.checkedAt.toISOString().replace('T',' ').slice(0,16) : 'Henüz yok'}</strong></div>{health?.latencyMs != null ? <div>Gecikme: <strong style={{color:'var(--text)'}}>{health.latencyMs} ms</strong></div> : null}</div></div>
+          <div className="span-6"><h3>Çalışma durumu</h3><div style={{display:'grid',gap:8,color:'var(--muted)',fontSize:14}}><div>Kayıtlı model: <strong style={{color:'var(--text)'}}>{provider.models.length}</strong></div><div>Etkin API anahtarı: <strong style={{color:'var(--text)'}}>{provider.credentials.filter(c=>c.enabled).length}</strong></div><div>Metin runtime: <strong style={{color:'var(--text)'}}>{runtime.text ? 'Destekleniyor' : 'Bağlı değil'}</strong></div><div>Görsel runtime: <strong style={{color:'var(--text)'}}>{runtime.image ? 'Destekleniyor' : 'Bağlı değil'}</strong></div><div>Son bağlantı testi: <strong style={{color:'var(--text)'}}>{health?.checkedAt ? health.checkedAt.toISOString().replace('T',' ').slice(0,16) : 'Henüz yok'}</strong></div>{health?.latencyMs != null ? <div>Gecikme: <strong style={{color:'var(--text)'}}>{health.latencyMs} ms</strong></div> : null}</div></div>
         </div>
 
         {hint ? <div style={{marginTop:16,padding:16,border:'1px solid var(--line)',borderRadius:14,background:'#0b0e14'}}><strong>{hint.title}</strong><ol style={{color:'var(--muted)',lineHeight:1.65,paddingLeft:20,marginBottom:0}}>{hint.steps.map(step=><li key={step}>{step}</li>)}</ol></div> : null}
