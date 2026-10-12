@@ -2,6 +2,7 @@ import { InferenceClient } from '@huggingface/inference';
 import { routeModel, type ProviderHealthStatus, type QualityProfile, type RouteCandidate } from '@magazala/core';
 import { randomUUID } from 'node:crypto';
 import { db } from './db';
+import { assertParentGeneration, attachGenerationLineage } from './design-lineage';
 import { revealProviderSecret } from './provider-credentials';
 import { detectImageDimensions, detectImageMime, readPrivateObject, storeGeneratedImage } from './object-storage';
 import { IMAGE_TO_IMAGE_RUNTIME_PROVIDER_SLUGS, TEXT_TO_IMAGE_RUNTIME_PROVIDER_SLUGS } from './provider-runtime';
@@ -11,6 +12,7 @@ type ImageInput = {
   userId: string;
   projectId?: string;
   referenceAssetId?: string;
+  parentGenerationId?: string;
   prompt: string;
   negativePrompt?: string;
   width: number;
@@ -109,10 +111,12 @@ async function invokeImageProvider(row:ImageModelRow,secret:string,input:ImageIn
 }
 
 export async function generateAndStoreImage(input:ImageInput){
-  if(input.projectId&&!await db.project.findFirst({where:{id:input.projectId,workspaceId:input.workspaceId},select:{id:true}}))throw new Error('PROJECT_NOT_FOUND');
+  const parent=await assertParentGeneration(input.workspaceId,input.parentGenerationId);
+  const effectiveProjectId=input.projectId??parent?.projectId??undefined;
+  if(effectiveProjectId&&!await db.project.findFirst({where:{id:effectiveProjectId,workspaceId:input.workspaceId},select:{id:true}}))throw new Error('PROJECT_NOT_FOUND');
   let reference:ReferenceInput=null;
   if(input.referenceAssetId){
-    const asset=await db.asset.findFirst({where:{id:input.referenceAssetId,workspaceId:input.workspaceId,kind:'REFERENCE_IMAGE'},select:{id:true,storageKey:true,mimeType:true}});
+    const asset=await db.asset.findFirst({where:{id:input.referenceAssetId,workspaceId:input.workspaceId,kind:{in:['REFERENCE_IMAGE','GENERATED_IMAGE']}},select:{id:true,storageKey:true,mimeType:true}});
     if(!asset)throw new Error('REFERENCE_ASSET_NOT_FOUND');
     const object=await readPrivateObject(asset.storageKey); const mimeType=detectImageMime(object.bytes,asset.mimeType); reference={id:asset.id,mimeType,bytes:object.bytes};
   }
@@ -120,16 +124,20 @@ export async function generateAndStoreImage(input:ImageInput){
   const rows=await loadImageModels(requiredCapability); if(!rows.length)throw new Error(reference?'NO_REFERENCE_IMAGE_MODEL_CONFIGURED':'NO_IMAGE_PROVIDER_CONFIGURED');
   const rowById=new Map(rows.map(row=>[row.id,row]));
   const decision=routeModel({operation:reference?'design.image_to_image':'design.text_to_image',qualityProfile:input.qualityProfile,requiredCapabilities:[requiredCapability],preferredCapabilities:[...(reference?['reference_images' as const]:[]),...(input.qualityProfile==='PRINT_PREFERRED'?['high_resolution' as const]:[])],benchmarkCategory:reference?'reference_adherence':'illustration',requireCommercialUse:true},rows.map(toRouteCandidate));
-  const generation=await db.generation.create({data:{workspaceId:input.workspaceId,projectId:input.projectId??null,userId:input.userId,prompt:input.prompt,operation:reference?'image_to_image':'text_to_image',qualityProfile:input.qualityProfile,status:'RUNNING',selectedModelId:decision.selected.model.id,selectedProviderId:decision.selected.model.providerId,routerReason:{score:decision.selected.score,reasons:decision.selected.reasons,referenceAssetId:reference?.id??null,alternatives:decision.alternatives.map(item=>({modelId:item.model.id,score:item.score}))}}});
+  const generation=await db.$transaction(async(tx)=>{
+    const created=await tx.generation.create({data:{workspaceId:input.workspaceId,projectId:effectiveProjectId??null,userId:input.userId,prompt:input.prompt,operation:reference?'image_to_image':'text_to_image',qualityProfile:input.qualityProfile,status:'RUNNING',selectedModelId:decision.selected.model.id,selectedProviderId:decision.selected.model.providerId,routerReason:{score:decision.selected.score,reasons:decision.selected.reasons,referenceAssetId:reference?.id??null,parentGenerationId:parent?.id??null,alternatives:decision.alternatives.map(item=>({modelId:item.model.id,score:item.score}))}}});
+    await attachGenerationLineage(tx,created.id,parent?.id);
+    return created;
+  });
   const ordered=[decision.selected,...decision.alternatives]; let lastCode='IMAGE_PROVIDER_UNAVAILABLE';
   for(let index=0;index<ordered.length;index+=1){
     const routed=ordered[index]; const row=rowById.get(routed.model.id); if(!row)continue; const credential=row.provider.credentials[0]; if(!credential)continue;
     const attemptNo=index+1; const attempt=await db.generationAttempt.create({data:{generationId:generation.id,providerId:row.providerId,modelId:row.id,attemptNo,startedAt:new Date()}}); const requestId=randomUUID(); const startedAt=new Date(); const startedMs=Date.now();
     try{
       const secret=await revealProviderSecret(credential.encryptedValue); const output=await invokeImageProvider(row,secret,input,reference); const finishedAt=new Date(); const latencyMs=Date.now()-startedMs; const dimensions=detectImageDimensions(output.bytes,output.mimeType); const stored=await storeGeneratedImage({workspaceId:input.workspaceId,generationId:generation.id,bytes:output.bytes,mimeType:output.mimeType});
-      const asset=await db.asset.create({data:{workspaceId:input.workspaceId,projectId:input.projectId??null,createdById:input.userId,kind:'GENERATED_IMAGE',storageKey:stored.storageKey,mimeType:output.mimeType,sizeBytes:BigInt(stored.sizeBytes),checksum:stored.checksum,width:dimensions?.width??null,height:dimensions?.height??null,metadata:{generationId:generation.id,providerId:row.providerId,modelId:row.id,referenceAssetId:reference?.id??null,requestedWidth:input.width,requestedHeight:input.height,providerHonorsRequestedDimensions:row.provider.slug==='huggingface-inference-providers'}}});
+      const asset=await db.asset.create({data:{workspaceId:input.workspaceId,projectId:effectiveProjectId??null,createdById:input.userId,kind:'GENERATED_IMAGE',storageKey:stored.storageKey,mimeType:output.mimeType,sizeBytes:BigInt(stored.sizeBytes),checksum:stored.checksum,width:dimensions?.width??null,height:dimensions?.height??null,metadata:{generationId:generation.id,parentGenerationId:parent?.id??null,providerId:row.providerId,modelId:row.id,referenceAssetId:reference?.id??null,requestedWidth:input.width,requestedHeight:input.height,providerHonorsRequestedDimensions:row.provider.slug==='huggingface-inference-providers'}}});
       await db.$transaction([db.generationAttempt.update({where:{id:attempt.id},data:{finishedAt,success:true,latencyMs}}),db.generation.update({where:{id:generation.id},data:{status:'COMPLETED',completedAt:finishedAt,selectedModelId:row.id,selectedProviderId:row.providerId}}),db.usageLedger.create({data:{workspaceId:input.workspaceId,userId:input.userId,providerId:row.providerId,modelId:row.id,operation:reference?'design.image_to_image':'design.text_to_image',requestId,startedAt,finishedAt,success:true,imagesGenerated:1,latencyMs}}),db.providerCredential.update({where:{id:credential.id},data:{lastSuccessAt:finishedAt,lastErrorCode:null}})]);
-      return {generationId:generation.id,assetId:asset.id,mimeType:output.mimeType,providerId:row.providerId,modelId:row.id,width:asset.width,height:asset.height,routerReason:generation.routerReason};
+      return {generationId:generation.id,parentGenerationId:parent?.id??null,assetId:asset.id,mimeType:output.mimeType,providerId:row.providerId,modelId:row.id,width:asset.width,height:asset.height,routerReason:generation.routerReason};
     }catch(error){const finishedAt=new Date();const code=safeErrorCode(error);lastCode=code;await db.$transaction([db.generationAttempt.update({where:{id:attempt.id},data:{finishedAt,success:false,errorCode:code,latencyMs:Date.now()-startedMs}}),db.usageLedger.create({data:{workspaceId:input.workspaceId,userId:input.userId,providerId:row.providerId,modelId:row.id,operation:reference?'design.image_to_image':'design.text_to_image',requestId,startedAt,finishedAt,success:false,latencyMs:Date.now()-startedMs}}),db.providerCredential.update({where:{id:credential.id},data:{lastErrorAt:finishedAt,lastErrorCode:code}})]);}
   }
   await db.generation.update({where:{id:generation.id},data:{status:'FAILED',completedAt:new Date()}}); throw new Error(lastCode);
