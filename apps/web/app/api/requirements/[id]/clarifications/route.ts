@@ -17,7 +17,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const raw = form ? Object.fromEntries(await request.formData()) : await request.json();
     const input = schema.parse(raw);
     const requirement = await db.requirement.findFirst({
-      where: { id, workspaceId: auth.context.workspace.id, conversation: { userId: auth.context.user.id } },
+      where: { id, workspaceId: auth.context.workspace.id, conversation: { is: { userId: auth.context.user.id } } },
       include: { conversation: { select: { id: true } } },
     });
     if (!requirement) throw new Error('REQUIREMENT_NOT_FOUND');
