@@ -1,9 +1,7 @@
 import { db } from '../../../lib/db';
+import { supportsImageRuntime, supportsTextRuntime } from '../../../lib/provider-runtime';
 
 export const dynamic = 'force-dynamic';
-
-const textAdapters = new Set(['nvidia-nim', 'google-gemini', 'cloudflare-workers-ai']);
-const imageAdapters = new Set(['huggingface-inference-providers', 'cloudflare-workers-ai']);
 
 type ReadinessState = 'OK' | 'WARNING' | 'MISSING';
 
@@ -62,8 +60,8 @@ export default async function SystemAdminPage() {
 
   const enabledProviders = providers.filter((provider) => provider.enabled);
   const readyProviders = enabledProviders.filter((provider) => provider.credentials.length > 0);
-  const textReady = readyProviders.some((provider) => textAdapters.has(provider.slug) && provider.models.some((model) => model.capabilities.some((capability) => capability.capability === 'text_generation')));
-  const imageReady = readyProviders.some((provider) => imageAdapters.has(provider.slug) && provider.models.some((model) => model.commercialUseAllowed === true && model.capabilities.some((capability) => capability.capability === 'text_to_image')));
+  const textReady = readyProviders.some((provider) => supportsTextRuntime(provider.slug) && provider.models.some((model) => model.capabilities.some((capability) => capability.capability === 'text_generation')));
+  const imageReady = readyProviders.some((provider) => supportsImageRuntime(provider.slug) && provider.models.some((model) => model.commercialUseAllowed === true && model.capabilities.some((capability) => capability.capability === 'text_to_image')));
   const cloudflareEnabled = enabledProviders.some((provider) => provider.slug === 'cloudflare-workers-ai');
   const storageReady = ['S3_ENDPOINT', 'S3_BUCKET', 'S3_ACCESS_KEY', 'S3_SECRET_KEY'].every(isConfigured);
 
@@ -109,8 +107,8 @@ export default async function SystemAdminPage() {
         {providers.length === 0 ? <div className="empty"><div><strong>Provider kaydı yok</strong><br/><span>Provider Center’dan doğrulanmış rehberleri eşitleyin.</span></div></div> : providers.map((provider) => {
           const latest = provider.health[0];
           const hasKey = provider.credentials.length > 0;
-          const textModels = provider.models.filter((model) => model.capabilities.some((capability) => capability.capability === 'text_generation')).length;
-          const imageModels = provider.models.filter((model) => model.commercialUseAllowed === true && model.capabilities.some((capability) => capability.capability === 'text_to_image')).length;
+          const textModels = provider.models.filter((model) => supportsTextRuntime(provider.slug) && model.capabilities.some((capability) => capability.capability === 'text_generation')).length;
+          const imageModels = provider.models.filter((model) => supportsImageRuntime(provider.slug) && model.commercialUseAllowed === true && model.capabilities.some((capability) => capability.capability === 'text_to_image')).length;
           return <div className="row" key={provider.id} style={{alignItems:'flex-start'}}><div><strong>{provider.name}</strong><div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:7}}><span className={`badge ${provider.enabled?'active':''}`}>{provider.enabled?'ETKİN':'PASİF'}</span><span className="badge">{hasKey?'ANAHTAR VAR':'ANAHTAR YOK'}</span><span className="badge">METİN {textModels}</span><span className="badge">GÖRSEL {imageModels}</span></div></div><div style={{textAlign:'right'}}><strong>{latest?.status ?? 'TEST EDİLMEDİ'}</strong><div style={{color:'var(--muted)',fontSize:12,marginTop:4}}>{latest?.checkedAt ? latest.checkedAt.toISOString().replace('T',' ').slice(0,16) : 'Sağlık kaydı yok'}{latest?.latencyMs != null ? ` · ${latest.latencyMs} ms` : ''}</div></div></div>;
         })}
       </section>
