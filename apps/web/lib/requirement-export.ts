@@ -18,6 +18,7 @@ export async function buildRequirementExport(requirementId: string) {
     include: {
       conversation: { include: { messages: { orderBy: { createdAt: 'asc' } } } },
       workspace: { select: { id: true, name: true, slug: true } },
+      clarifications: { include: { author: { select: { email: true, displayName: true } } }, orderBy: { createdAt: 'asc' } },
     },
   });
   if (!requirement) throw new Error('REQUIREMENT_NOT_FOUND');
@@ -39,6 +40,12 @@ export async function buildRequirementExport(requirementId: string) {
   const aiAnalysis = requirement.conversation.aiInterpretation
     ? JSON.stringify(requirement.conversation.aiInterpretation, null, 2)
     : 'AI analizi kaydı bulunmuyor.';
+  const clarificationThread = requirement.clarifications.map((message) => ({
+    role: message.authorRole,
+    author: message.author?.displayName ?? message.author?.email ?? (message.authorRole === 'ADMIN' ? 'Admin' : 'Kullanıcı'),
+    content: message.content,
+    createdAt: message.createdAt.toISOString(),
+  }));
 
   const input = {
     productVersion: productVersion(),
@@ -52,10 +59,16 @@ export async function buildRequirementExport(requirementId: string) {
     confirmedAt: requirement.userConfirmedAt?.toISOString() ?? 'not-confirmed',
   };
 
+  const baseMarkdown = renderRequirementMarkdown(input);
+  const clarificationMarkdown = clarificationThread.length
+    ? `\n\n## Admin ↔ User Clarification Thread\n${clarificationThread.map((message) => `\n### ${message.role} · ${message.author} · ${message.createdAt}\n${message.content}`).join('\n')}`
+    : '\n\n## Admin ↔ User Clarification Thread\nNo clarification messages.';
+  const baseJson = JSON.parse(renderRequirementJson(input)) as Record<string, unknown>;
+
   return {
     requirement,
-    input,
-    markdown: renderRequirementMarkdown(input),
-    json: renderRequirementJson(input),
+    input: { ...input, clarificationThread },
+    markdown: `${baseMarkdown}${clarificationMarkdown}`,
+    json: JSON.stringify({ ...baseJson, clarificationThread }, null, 2),
   };
 }
