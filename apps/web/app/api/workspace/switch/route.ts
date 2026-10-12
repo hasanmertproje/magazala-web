@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getAuthContext } from '../../../../lib/auth';
 import { db } from '../../../../lib/db';
-import { assertSameOrigin, isHtmlForm } from '../../../../lib/request-security';
+import { assertSameOrigin, isHtmlForm, publicRequestUrl } from '../../../../lib/request-security';
 import { ACTIVE_WORKSPACE_COOKIE, activeWorkspaceCookieOptions } from '../../../../lib/session';
 
 const schema = z.object({
@@ -37,13 +37,13 @@ export async function POST(request: Request) {
     });
 
     const response = form
-      ? NextResponse.redirect(new URL(safeNext(input.next), request.url), 303)
+      ? NextResponse.redirect(publicRequestUrl(safeNext(input.next), request), 303)
       : NextResponse.json({ ok: true, workspace: { id: membership.workspace.id, name: membership.workspace.name } });
     response.cookies.set(ACTIVE_WORKSPACE_COOKIE, membership.workspaceId, activeWorkspaceCookieOptions());
     return response;
   } catch (error) {
     const code = error instanceof Error ? error.message : 'WORKSPACE_SWITCH_FAILED';
-    if (form) return NextResponse.redirect(new URL(`/?error=${encodeURIComponent(code)}`, request.url), 303);
+    if (form) return NextResponse.redirect(publicRequestUrl(`/?error=${encodeURIComponent(code)}`, request), 303);
     return NextResponse.json({ ok: false, code }, { status: code === 'WORKSPACE_ACCESS_DENIED' ? 403 : 400 });
   }
 }
