@@ -1,9 +1,12 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 import { getAuthContext } from '../../lib/auth';
 import { db } from '../../lib/db';
 import { hashInvitationToken, isStructurallyValidInvitationToken } from '../../lib/invitations';
 
 export const dynamic = 'force-dynamic';
+export const metadata: Metadata = { referrer: 'no-referrer' };
 
 const errorMessages: Record<string, string> = {
   INVITATION_INVALID: 'Davet bağlantısı geçerli değil.',
@@ -66,7 +69,7 @@ export default async function InvitePage({ searchParams }: { searchParams: Promi
   </InviteShell>;
 }
 
-function InviteShell({ children }: { children: React.ReactNode }) {
+function InviteShell({ children }: { children: ReactNode }) {
   return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:24}}><section className="card" style={{width:'min(560px,100%)'}}><div className="brand" style={{marginBottom:22}}>Magazala</div>{children}</section></main>;
 }
 
