@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { getAuthContext } from '../../../../lib/auth';
 import { db } from '../../../../lib/db';
 import { hashInvitationToken, isStructurallyValidInvitationToken } from '../../../../lib/invitations';
-import { assertSameOrigin, isHtmlForm } from '../../../../lib/request-security';
+import { assertSameOrigin, isHtmlForm, publicRequestUrl } from '../../../../lib/request-security';
 import { ACTIVE_WORKSPACE_COOKIE, activeWorkspaceCookieOptions, issueSessionToken, SESSION_COOKIE, sessionCookieOptions } from '../../../../lib/session';
 
 const schema = z.object({
@@ -14,7 +14,7 @@ const schema = z.object({
 });
 
 function inviteRedirect(request: Request, token: string, key: 'error' | 'notice', value: string) {
-  const url = new URL('/invite', request.url);
+  const url = publicRequestUrl('/invite', request);
   url.searchParams.set('token', token);
   url.searchParams.set(key, value);
   return NextResponse.redirect(url, 303);
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       }, { isolationLevel: 'Serializable' });
 
       const response = form
-        ? NextResponse.redirect(new URL('/', request.url), 303)
+        ? NextResponse.redirect(publicRequestUrl('/', request), 303)
         : NextResponse.json({ ok: true, workspace: invitation.workspace, existingAccount: true });
       response.cookies.set(ACTIVE_WORKSPACE_COOKIE, invitation.workspaceId, activeWorkspaceCookieOptions());
       return response;
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
     }, { isolationLevel: 'Serializable' });
 
     const response = form
-      ? NextResponse.redirect(new URL('/', request.url), 303)
+      ? NextResponse.redirect(publicRequestUrl('/', request), 303)
       : NextResponse.json({ ok: true, workspace: invitation.workspace, user: { id: user.id, email: user.email }, existingAccount: false }, { status: 201 });
     response.cookies.set(SESSION_COOKIE, issueSessionToken(user.id), sessionCookieOptions());
     response.cookies.set(ACTIVE_WORKSPACE_COOKIE, invitation.workspaceId, activeWorkspaceCookieOptions());
