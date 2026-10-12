@@ -2,9 +2,42 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireSuperAdminApi } from '../../../../../../lib/auth';
 import { db } from '../../../../../../lib/db';
+import { safeInternalPath } from '../../../../../../lib/navigation';
 import { assertSameOrigin, isHtmlForm } from '../../../../../../lib/request-security';
-const schema=z.object({featureId:z.string().min(1),enabled:z.preprocess(v=>v==='on'||v==='true'||v===true,z.boolean()),limit:z.preprocess(v=>v===''||v==null?null:Number(v),z.number().int().min(0).nullable()),validUntil:z.string().optional()});
-export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){
- const auth=await requireSuperAdminApi();if(!auth.ok)return NextResponse.json({ok:false,code:auth.code},{status:auth.status});const form=isHtmlForm(request);
- try{assertSameOrigin(request);const {id}=await params;const raw=form?Object.fromEntries(await request.formData()):await request.json();const input=schema.parse(raw);if(!await db.workspace.findUnique({where:{id},select:{id:true}}))throw new Error('WORKSPACE_NOT_FOUND');const validUntil=input.validUntil?.trim()?new Date(input.validUntil):null;if(validUntil&&Number.isNaN(validUntil.getTime()))throw new Error('INVALID_VALID_UNTIL');const item=await db.workspaceFeatureOverride.upsert({where:{workspaceId_featureId:{workspaceId:id,featureId:input.featureId}},create:{workspaceId:id,featureId:input.featureId,enabled:input.enabled,limit:input.limit,validUntil},update:{enabled:input.enabled,limit:input.limit,validUntil}});await db.auditLog.create({data:{actorUserId:auth.context.user.id,workspaceId:id,action:'workspace.feature.override',entityType:'WorkspaceFeatureOverride',entityId:`${id}:${input.featureId}`,metadata:{enabled:input.enabled,limit:input.limit,validUntil:validUntil?.toISOString()??null}}});if(form)return NextResponse.redirect(new URL('/admin/packages?notice=override-updated',request.url),303);return NextResponse.json({ok:true,item});}catch(error){const code=error instanceof Error?error.message:'FEATURE_OVERRIDE_FAILED';if(form)return NextResponse.redirect(new URL(`/admin/packages?error=${encodeURIComponent(code)}`,request.url),303);return NextResponse.json({ok:false,code},{status:400});}
+
+const schema = z.object({
+  featureId: z.string().min(1),
+  enabled: z.preprocess((value) => value === 'on' || value === 'true' || value === true, z.boolean()),
+  limit: z.preprocess((value) => value === '' || value == null ? null : Number(value), z.number().int().min(0).nullable()),
+  validUntil: z.string().optional(),
+  returnTo: z.string().optional(),
+});
+
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireSuperAdminApi();
+  if (!auth.ok) return NextResponse.json({ ok: false, code: auth.code }, { status: auth.status });
+  const form = isHtmlForm(request);
+  let returnTo = '/admin/packages';
+  try {
+    assertSameOrigin(request);
+    const { id } = await params;
+    const raw = form ? Object.fromEntries(await request.formData()) : await request.json();
+    const input = schema.parse(raw);
+    returnTo = safeInternalPath(input.returnTo, '/admin/packages');
+    if (!await db.workspace.findUnique({ where: { id }, select: { id: true } })) throw new Error('WORKSPACE_NOT_FOUND');
+    const validUntil = input.validUntil?.trim() ? new Date(input.validUntil) : null;
+    if (validUntil && Number.isNaN(validUntil.getTime())) throw new Error('INVALID_VALID_UNTIL');
+    const item = await db.workspaceFeatureOverride.upsert({
+      where: { workspaceId_featureId: { workspaceId: id, featureId: input.featureId } },
+      create: { workspaceId: id, featureId: input.featureId, enabled: input.enabled, limit: input.limit, validUntil },
+      update: { enabled: input.enabled, limit: input.limit, validUntil },
+    });
+    await db.auditLog.create({ data: { actorUserId: auth.context.user.id, workspaceId: id, action: 'workspace.feature.override', entityType: 'WorkspaceFeatureOverride', entityId: `${id}:${input.featureId}`, metadata: { enabled: input.enabled, limit: input.limit, validUntil: validUntil?.toISOString() ?? null } } });
+    if (form) return NextResponse.redirect(new URL(`${returnTo}${returnTo.includes('?') ? '&' : '?'}notice=override-updated`, request.url), 303);
+    return NextResponse.json({ ok: true, item });
+  } catch (error) {
+    const code = error instanceof Error ? error.message : 'FEATURE_OVERRIDE_FAILED';
+    if (form) return NextResponse.redirect(new URL(`${returnTo}${returnTo.includes('?') ? '&' : '?'}error=${encodeURIComponent(code)}`, request.url), 303);
+    return NextResponse.json({ ok: false, code }, { status: 400 });
+  }
 }
