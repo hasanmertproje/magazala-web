@@ -1,17 +1,20 @@
 {
   "name": "magazala-web",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "packageManager": "npm@10",
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "dev": "npm run dev --workspace=@magazala/web",
     "prisma:generate": "prisma generate --schema=prisma/schema.prisma",
+    "prisma:migrate:deploy": "prisma migrate deploy --schema=prisma/schema.prisma",
     "typecheck:core": "tsc -p packages/core/tsconfig.json --noEmit",
     "typecheck:web": "npm run prisma:generate && npm run typecheck --workspace=@magazala/web",
     "build:core": "bash scripts/build-core.sh",
     "test:core": "npm run build:core && node --test packages/core-tests/core.test.mjs",
-    "check": "npm run typecheck:core && npm run test:core && npm run typecheck:web",
+    "policy:production-text": "node scripts/production-text-policy.mjs",
+    "preflight:production": "node scripts/production-preflight.mjs",
+    "check": "npm run policy:production-text && npm run typecheck:core && npm run test:core && npm run typecheck:web",
     "build": "npm run prisma:generate && npm run build --workspace=@magazala/web"
   },
   "devDependencies": {
