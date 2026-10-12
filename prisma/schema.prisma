@@ -49,6 +49,10 @@ enum RequirementStatus {
   REJECTED
   MERGED
 }
+enum RequirementClarificationAuthor {
+  ADMIN
+  USER
+}
 enum JobStatus {
   QUEUED
   RUNNING
@@ -83,6 +87,7 @@ model User {
   notifications Notification[]
   auditLogs    AuditLog[] @relation("AuditActor")
   invitationsCreated WorkspaceInvitation[] @relation("InviteCreator")
+  clarificationMessages RequirementClarificationMessage[]
 }
 
 model Workspace {
@@ -486,6 +491,7 @@ model Requirement {
   relationsFrom        RequirementRelation[] @relation("RequirementFrom")
   relationsTo          RequirementRelation[] @relation("RequirementTo")
   exports              RequirementExport[]
+  clarifications       RequirementClarificationMessage[]
   @@index([workspaceId, status, updatedAt])
 }
 
@@ -505,6 +511,19 @@ model RequirementExport {
   storageKey    String
   createdAt     DateTime @default(now())
   requirement   Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+}
+
+model RequirementClarificationMessage {
+  id            String @id @default(cuid())
+  requirementId String
+  authorUserId  String?
+  authorRole    RequirementClarificationAuthor
+  content       String
+  createdAt     DateTime @default(now())
+  requirement   Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  author        User? @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
+  @@index([requirementId, createdAt])
+  @@index([authorUserId])
 }
 
 model Notification {
