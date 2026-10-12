@@ -25,6 +25,7 @@ export default async function RequirementDetailPage({params,searchParams}:{param
     include:{
       workspace:{select:{id:true,name:true,slug:true}},
       conversation:{include:{messages:{orderBy:{createdAt:'asc'}}}},
+      clarifications:{include:{author:{select:{email:true,displayName:true}}},orderBy:{createdAt:'asc'}},
       relationsFrom:{include:{to:{select:{id:true,title:true,status:true}}}},
       relationsTo:{include:{from:{select:{id:true,title:true,status:true}}}},
     },
@@ -39,6 +40,7 @@ export default async function RequirementDetailPage({params,searchParams}:{param
   const outOfScope=strings(requirement.outOfScope);
   const aiAnalysis=requirement.conversation.aiInterpretation?JSON.stringify(requirement.conversation.aiInterpretation,null,2):null;
   const returnTo=`/admin/requirements/${requirement.id}`;
+  const closed=['RELEASED','REJECTED','MERGED'].includes(requirement.status);
 
   return <div className="content">
     <div style={{display:'flex',justifyContent:'space-between',gap:16,alignItems:'flex-start',flexWrap:'wrap'}}>
@@ -63,7 +65,7 @@ export default async function RequirementDetailPage({params,searchParams}:{param
 
       <section className="card span-5">
         <h2 style={{marginTop:0}}>Geliştirme için dışa aktar</h2>
-        <p className="page-subtitle">Export; onaylı requirement, AI analizi, ham sohbet ve özellik kataloğu snapshot’ını birlikte taşır. Raw konuşma ile AI yorumu ayrı bölümlerde kalır.</p>
+        <p className="page-subtitle">Export; onaylı requirement, AI analizi, ham sohbet, açıklama thread’i ve özellik kataloğu snapshot’ını birlikte taşır.</p>
         <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:12}}><a className="action primary" href={`/api/admin/requirements/${requirement.id}/export?format=md`}>Markdown indir</a><a className="action" href={`/api/admin/requirements/${requirement.id}/export?format=json`}>JSON indir</a><a className="action" href={`/api/admin/requirements/${requirement.id}/export?format=txt`}>TXT indir</a></div>
       </section>
     </div>
@@ -73,6 +75,13 @@ export default async function RequirementDetailPage({params,searchParams}:{param
       <p style={{lineHeight:1.7,marginTop:14}}>{requirement.description}</p>
       <PrettyList title="Onaylanan gereksinimler" items={confirmed}/><PrettyList title="Kabul kriteri önerileri" items={acceptance}/><PrettyList title="Açık sorular" items={openQuestions}/><PrettyList title="Riskler" items={risks}/><PrettyList title="Bağımlılıklar" items={dependencies}/><PrettyList title="Kapsam dışı" items={outOfScope}/>
       <div style={{fontSize:11,color:'var(--muted)',marginTop:12}}>Kullanıcı onayı: {requirement.userConfirmedAt?.toLocaleString('tr-TR')??'kayıt yok'} · Son güncelleme: {requirement.updatedAt.toLocaleString('tr-TR')}</div>
+    </section>
+
+    <section className="card" style={{marginTop:18}}>
+      <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap'}}><div><span className="badge">ADMİN ↔ KULLANICI AÇIKLAMA KANALI</span><h2 style={{margin:'9px 0 0'}}>Talep açıklamaları</h2></div><span className="badge">{requirement.clarifications.length} MESAJ</span></div>
+      <p className="page-subtitle">Bu thread orijinal Tasarlayalım AI sohbetinden ayrıdır. Admin mesajı AI mesajı olarak, kullanıcı cevabı da eski onaylı gereksinimin parçası olarak gösterilmez.</p>
+      <div style={{display:'grid',gap:9,marginTop:12}}>{requirement.clarifications.length?requirement.clarifications.map((message)=><div key={message.id} style={{padding:12,border:'1px solid var(--line)',borderRadius:12,background:message.authorRole==='ADMIN'?'rgba(255,255,255,.025)':'transparent'}}><div style={{display:'flex',justifyContent:'space-between',gap:8,marginBottom:6}}><strong style={{fontSize:12}}>{message.authorRole==='ADMIN'?'Admin':'Kullanıcı'}{message.author?.displayName||message.author?.email?` · ${message.author?.displayName??message.author?.email}`:''}</strong><span style={{fontSize:10,color:'var(--muted)'}}>{message.createdAt.toLocaleString('tr-TR')}</span></div><div style={{whiteSpace:'pre-wrap',lineHeight:1.6,fontSize:13}}>{message.content}</div></div>):<p className="page-subtitle">Henüz açıklama mesajı yok.</p>}</div>
+      {!closed?<form action={`/api/admin/requirements/${requirement.id}/clarifications`} method="post" style={{display:'grid',gap:8,marginTop:14}}><input type="hidden" name="returnTo" value={returnTo}/><label>Ek bilgi iste<textarea name="content" required minLength={2} maxLength={4000} placeholder="Netleştirilmesi gereken noktayı kullanıcıya sorun…" style={{width:'100%',minHeight:90,marginTop:6,background:'#0b0e14',border:'1px solid var(--line)',borderRadius:12,color:'white',padding:12}}/></label><button className="action primary" type="submit" style={{width:'fit-content'}}>Kullanıcıdan açıklama iste</button></form>:<p className="page-subtitle" style={{marginTop:12}}>Kapalı taleplerde yeni açıklama istenemez.</p>}
     </section>
 
     <section className="card" style={{marginTop:18}}>
