@@ -38,22 +38,20 @@ function discoverNvidia(payload: unknown): DiscoveredModel[] {
 
 function discoverGemini(payload: unknown): DiscoveredModel[] {
   const models = (payload as { models?: Array<{ name?: string; displayName?: string; supportedGenerationMethods?: string[] }> })?.models ?? [];
-  return models
-    .map((model) => {
-      const id = model.name?.replace(/^models\//, '').trim();
-      if (!id) return null;
-      const methods = model.supportedGenerationMethods ?? [];
-      const suggestedCapabilities = methods.includes('generateContent') ? ['text_generation'] : [];
-      return {
-        id,
-        name: model.displayName?.trim() || id,
-        methods,
-        suggestedCapabilities,
-        note: suggestedCapabilities.length ? 'Yetenek yalnız API metoduna göre önerildi; ticari kullanım ve çıktı türü ayrıca doğrulanmalıdır.' : undefined,
-      } satisfies DiscoveredModel;
-    })
-    .filter((item): item is DiscoveredModel => item !== null)
-    .slice(0, 250);
+  return models.flatMap<DiscoveredModel>((model) => {
+    const id = model.name?.replace(/^models\//, '').trim();
+    if (!id) return [];
+    const methods = model.supportedGenerationMethods ?? [];
+    const suggestedCapabilities = methods.includes('generateContent') ? ['text_generation'] : [];
+    const item: DiscoveredModel = {
+      id,
+      name: model.displayName?.trim() || id,
+      methods,
+      suggestedCapabilities,
+    };
+    if (suggestedCapabilities.length) item.note = 'Yetenek yalnız API metoduna göre önerildi; ticari kullanım ve çıktı türü ayrıca doğrulanmalıdır.';
+    return [item];
+  }).slice(0, 250);
 }
 
 function discoverCloudflare(payload: unknown): DiscoveredModel[] {
@@ -64,21 +62,18 @@ function discoverCloudflare(payload: unknown): DiscoveredModel[] {
     'Image to Text': ['vision_input'],
     'Text Embeddings': ['embeddings'],
   };
-  return result
-    .map((model) => {
-      const id = model.name?.trim();
-      if (!id) return null;
-      const task = typeof model.task === 'string' ? model.task : model.task?.name;
-      return {
-        id,
-        name: id,
-        methods: task ? [task] : [],
-        suggestedCapabilities: task ? (capabilityByTask[task] ?? []) : [],
-        note: 'Cloudflare task bilgisi yalnız başlangıç önerisidir; model lisansı ve gerçek capability admin tarafından doğrulanmalıdır.',
-      } satisfies DiscoveredModel;
-    })
-    .filter((item): item is DiscoveredModel => item !== null)
-    .slice(0, 250);
+  return result.flatMap<DiscoveredModel>((model) => {
+    const id = model.name?.trim();
+    if (!id) return [];
+    const task = typeof model.task === 'string' ? model.task : model.task?.name;
+    return [{
+      id,
+      name: id,
+      methods: task ? [task] : [],
+      suggestedCapabilities: task ? (capabilityByTask[task] ?? []) : [],
+      note: 'Cloudflare task bilgisi yalnız başlangıç önerisidir; model lisansı ve gerçek capability admin tarafından doğrulanmalıdır.',
+    }];
+  }).slice(0, 250);
 }
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
