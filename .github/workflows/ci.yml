@@ -52,3 +52,5 @@ jobs:
         run: npm run preflight:production
       - run: npm run check
       - run: npm run build
+      - name: Runtime smoke
+        run: bash scripts/runtime-smoke.sh
