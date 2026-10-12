@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { supportsModelDiscovery } from '../lib/provider-runtime';
 
 type ProviderOption = {
   id: string;
@@ -25,8 +26,6 @@ type Payload = {
   models?: DiscoveredModel[];
 };
 
-const supported = new Set(['nvidia-nim', 'google-gemini', 'cloudflare-workers-ai']);
-
 function friendlyError(code?: string) {
   if (code === 'PROVIDER_CREDENTIAL_REQUIRED') return 'Bu sağlayıcı için önce etkin bir API anahtarı ekleyin.';
   if (code === 'CLOUDFLARE_ACCOUNT_ID_REQUIRED') return 'Cloudflare model keşfi için sunucuda CLOUDFLARE_ACCOUNT_ID yapılandırılmalıdır.';
@@ -37,7 +36,7 @@ function friendlyError(code?: string) {
 }
 
 export function ModelDiscovery({ providers }: { providers: ProviderOption[] }) {
-  const discoveryProviders = useMemo(() => providers.filter((provider) => supported.has(provider.slug)), [providers]);
+  const discoveryProviders = useMemo(() => providers.filter((provider) => supportsModelDiscovery(provider.slug)), [providers]);
   const [providerId, setProviderId] = useState(discoveryProviders[0]?.id ?? '');
   const [models, setModels] = useState<DiscoveredModel[]>([]);
   const [filter, setFilter] = useState('');

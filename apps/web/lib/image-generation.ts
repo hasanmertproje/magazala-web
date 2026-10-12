@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { db } from './db';
 import { revealProviderSecret } from './provider-credentials';
 import { detectImageDimensions, detectImageMime, readPrivateObject, storeGeneratedImage } from './object-storage';
+import { IMAGE_TO_IMAGE_RUNTIME_PROVIDER_SLUGS, TEXT_TO_IMAGE_RUNTIME_PROVIDER_SLUGS } from './provider-runtime';
 
 type ImageInput = {
   workspaceId: string;
@@ -20,7 +21,6 @@ type ImageInput = {
 
 type ReferenceInput = { id:string; mimeType:string; bytes:Uint8Array } | null;
 type ImageModelRow = Awaited<ReturnType<typeof loadImageModels>>[number];
-
 type ImageProviderOutput = { bytes: Uint8Array; mimeType: string };
 
 function healthStatus(value?: string): ProviderHealthStatus {
@@ -31,8 +31,8 @@ function healthStatus(value?: string): ProviderHealthStatus {
 
 async function loadImageModels(requiredCapability: 'text_to_image'|'image_to_image') {
   const supportedSlugs = requiredCapability === 'text_to_image'
-    ? ['huggingface-inference-providers', 'cloudflare-workers-ai']
-    : ['huggingface-inference-providers'];
+    ? [...TEXT_TO_IMAGE_RUNTIME_PROVIDER_SLUGS]
+    : [...IMAGE_TO_IMAGE_RUNTIME_PROVIDER_SLUGS];
   return db.aIModel.findMany({
     where:{enabled:true,capabilities:{some:{capability:requiredCapability}},provider:{slug:{in:supportedSlugs},enabled:true,credentials:{some:{enabled:true}}}},
     include:{capabilities:true,benchmarkRuns:{orderBy:{createdAt:'desc'},take:20},provider:{include:{credentials:{where:{enabled:true},orderBy:{updatedAt:'desc'},take:1},health:{orderBy:{checkedAt:'desc'},take:1}}}},
