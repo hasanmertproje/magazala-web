@@ -94,7 +94,7 @@ async function invokeGemini(candidate: Candidate, secret: string, input: Generat
   const model = candidate.externalModelId.replace(/^models\//, '');
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
-    headers: { 'x-goog-api-key': secret, 'Content-Type': 'application/json', Accept: 'application/json', 'x-goog-api-client': 'magazala/0.1.0' },
+    headers: { 'x-goog-api-key': secret, 'Content-Type': 'application/json', Accept: 'application/json', 'x-goog-api-client': 'magazala/0.3.0' },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: input.systemPrompt ?? TASARLAYALIM_AI_SYSTEM_PROMPT }] },
       contents: input.messages.map((message) => ({
@@ -120,9 +120,70 @@ async function invokeGemini(candidate: Candidate, secret: string, input: Generat
   return { text, inputUnits: payload.usageMetadata?.promptTokenCount, outputUnits: payload.usageMetadata?.candidatesTokenCount };
 }
 
+function cloudflareAccountId() {
+  const value = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
+  if (!value || !/^[a-f0-9]{32}$/i.test(value)) throw new Error('CLOUDFLARE_ACCOUNT_ID_REQUIRED');
+  return value;
+}
+
+function cloudflareModelId(candidate: Candidate) {
+  const value = candidate.externalModelId.trim();
+  if (!/^@cf\/[A-Za-z0-9._/-]+$/.test(value)) throw new Error('CLOUDFLARE_MODEL_ID_INVALID');
+  return value;
+}
+
+async function invokeCloudflare(candidate: Candidate, secret: string, input: GenerateTextInput): Promise<ProviderCallResult> {
+  const settings = operationSettings(input.operation);
+  const accountId = cloudflareAccountId();
+  const modelId = cloudflareModelId(candidate);
+  const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${modelId}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
+      messages: [
+        { role: 'system', content: input.systemPrompt ?? TASARLAYALIM_AI_SYSTEM_PROMPT },
+        ...input.messages,
+      ],
+      temperature: settings.temperature,
+      max_tokens: settings.maxTokens,
+      stream: false,
+    }),
+    cache: 'no-store',
+    signal: AbortSignal.timeout(45_000),
+  });
+  if (!response.ok) throw new Error(`CLOUDFLARE_HTTP_${response.status}`);
+  const payload = await response.json() as {
+    result?: {
+      response?: string;
+      output_text?: string;
+      choices?: Array<{ message?: { content?: string } }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number; input_tokens?: number; output_tokens?: number };
+    } | string;
+    response?: string;
+    usage?: { prompt_tokens?: number; completion_tokens?: number; input_tokens?: number; output_tokens?: number };
+  };
+  const result = payload.result;
+  const resultObject = typeof result === 'object' && result !== null ? result : undefined;
+  const text = (
+    (typeof result === 'string' ? result : undefined) ??
+    resultObject?.response ??
+    resultObject?.output_text ??
+    resultObject?.choices?.[0]?.message?.content ??
+    payload.response
+  )?.trim();
+  if (!text) throw new Error('CLOUDFLARE_EMPTY_RESPONSE');
+  const usage = resultObject?.usage ?? payload.usage;
+  return {
+    text,
+    inputUnits: usage?.prompt_tokens ?? usage?.input_tokens,
+    outputUnits: usage?.completion_tokens ?? usage?.output_tokens,
+  };
+}
+
 async function invokeCandidate(candidate: Candidate, secret: string, input: GenerateTextInput) {
   if (candidate.provider.slug === 'nvidia-nim') return invokeNvidia(candidate, secret, input);
   if (candidate.provider.slug === 'google-gemini') return invokeGemini(candidate, secret, input);
+  if (candidate.provider.slug === 'cloudflare-workers-ai') return invokeCloudflare(candidate, secret, input);
   throw new Error('PROVIDER_TEXT_ADAPTER_NOT_SUPPORTED');
 }
 
@@ -139,7 +200,7 @@ export async function generateProviderBackedText(input: GenerateTextInput) {
   for (const candidate of candidates) {
     const credential = candidate.provider.credentials[0];
     if (!credential) continue;
-    if (!['nvidia-nim', 'google-gemini'].includes(candidate.provider.slug)) continue;
+    if (!['nvidia-nim', 'google-gemini', 'cloudflare-workers-ai'].includes(candidate.provider.slug)) continue;
     attemptedSupportedAdapter = true;
 
     const requestId = randomUUID();
