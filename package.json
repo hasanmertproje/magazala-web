@@ -6,6 +6,7 @@
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "dev": "npm run dev --workspace=@magazala/web",
+    "start": "npm run start --workspace=@magazala/web",
     "prisma:generate": "prisma generate --schema=prisma/schema.prisma",
     "prisma:migrate:deploy": "prisma migrate deploy --schema=prisma/schema.prisma",
     "typecheck:core": "tsc -p packages/core/tsconfig.json --noEmit",
