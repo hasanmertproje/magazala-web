@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { requireSuperAdminApi } from '../../../../../lib/auth';
-import { db } from '../../../../../lib/db';
-import { assertSameOrigin, isHtmlForm } from '../../../../../lib/request-security';
+import { requireSuperAdminApi } from '../../../../../../lib/auth';
+import { db } from '../../../../../../lib/db';
+import { assertSameOrigin, isHtmlForm } from '../../../../../../lib/request-security';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireSuperAdminApi();
