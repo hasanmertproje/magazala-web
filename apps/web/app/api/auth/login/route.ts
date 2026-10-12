@@ -8,9 +8,15 @@ import { issueSessionToken, SESSION_COOKIE, sessionCookieOptions } from '../../.
 const schema = z.object({
   email: z.string().email().max(254).transform((value) => value.trim().toLowerCase()),
   password: z.string().min(1).max(128),
+  next: z.string().max(2048).optional(),
 });
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function safeNext(value?: string) {
+  if (!value || !value.startsWith('/') || value.startsWith('//') || value.includes('\\') || /[\u0000-\u001f]/.test(value)) return '/';
+  return value;
+}
 
 export async function POST(request: Request) {
   const formRequest = isHtmlForm(request);
@@ -22,12 +28,17 @@ export async function POST(request: Request) {
     const valid = user ? await compare(input.password, user.passwordHash) : false;
     if (!valid || !user) {
       await delay(250);
-      if (formRequest) return NextResponse.redirect(new URL('/login?error=INVALID_CREDENTIALS', request.url), 303);
+      if (formRequest) {
+        const url = new URL('/login', request.url);
+        url.searchParams.set('error', 'INVALID_CREDENTIALS');
+        if (safeNext(input.next) !== '/') url.searchParams.set('next', safeNext(input.next));
+        return NextResponse.redirect(url, 303);
+      }
       return NextResponse.json({ ok: false, code: 'INVALID_CREDENTIALS' }, { status: 401 });
     }
 
     const response = formRequest
-      ? NextResponse.redirect(new URL('/', request.url), 303)
+      ? NextResponse.redirect(new URL(safeNext(input.next), request.url), 303)
       : NextResponse.json({ ok: true });
     response.cookies.set(SESSION_COOKIE, issueSessionToken(user.id), sessionCookieOptions());
     await db.auditLog.create({ data: { actorUserId: user.id, action: 'auth.login', entityType: 'User', entityId: user.id } });

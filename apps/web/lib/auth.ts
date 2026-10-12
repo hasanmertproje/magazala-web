@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { db } from './db';
-import { SESSION_COOKIE, verifySessionToken } from './session';
+import { ACTIVE_WORKSPACE_COOKIE, SESSION_COOKIE, verifySessionToken } from './session';
 
 export async function getAuthContext() {
   const jar = await cookies();
@@ -20,7 +20,9 @@ export async function getAuthContext() {
     },
   });
   if (!user) return null;
-  const membership = user.memberships[0] ?? null;
+
+  const requestedWorkspaceId = jar.get(ACTIVE_WORKSPACE_COOKIE)?.value;
+  const membership = user.memberships.find((item) => item.workspaceId === requestedWorkspaceId) ?? user.memberships[0] ?? null;
   if (!user.isSuperAdmin && !membership) return null;
   return { user, membership, workspace: membership?.workspace ?? null };
 }

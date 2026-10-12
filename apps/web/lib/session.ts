@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export const SESSION_COOKIE = 'magazala_session';
+export const ACTIVE_WORKSPACE_COOKIE = 'magazala_workspace';
 export const SESSION_TTL_SECONDS = 60 * 60 * 8;
 
 type SessionClaims = {
@@ -55,4 +56,8 @@ export function sessionCookieOptions() {
     path: '/',
     maxAge: SESSION_TTL_SECONDS,
   };
+}
+
+export function activeWorkspaceCookieOptions() {
+  return sessionCookieOptions();
 }
