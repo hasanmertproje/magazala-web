@@ -6,6 +6,7 @@ const userSections = [
   ['Çalışma Alanı', [['Projeler','/workspace/projects'],['Dosyalar','/workspace/assets']]],
   ['Commerce', [['Ürünler · Beta','/commerce/products'],['Barkodlar · Beta','/commerce/barcodes'],['Mağazalar · Preview','/commerce/stores'],['Envanter · Preview','/commerce/inventory'],['Import / Export · Beta','/commerce/import-export']]],
   ['Otomasyon', [['İş Akışları · Beta','/automation/workflows']]],
+  ['Hesap', [['Bildirimler','/notifications']]],
   ['Yardım & Keşif', [['Özellikler Hakkında Konuş','/help/features'],['Bilgilendirme','/help/info']]],
 ] as const;
 
@@ -22,6 +23,7 @@ export function AppShell({
   workspaceName,
   workspaces = [],
   isSuperAdmin = false,
+  unreadNotifications = 0,
 }: {
   children: ReactNode;
   displayName?: string;
@@ -29,6 +31,7 @@ export function AppShell({
   workspaceName?: string;
   workspaces?: WorkspaceOption[];
   isSuperAdmin?: boolean;
+  unreadNotifications?: number;
 }) {
   const sections = isSuperAdmin ? [...userSections, ...adminSections] : userSections;
   return <div className="shell">
@@ -36,7 +39,7 @@ export function AppShell({
       <div className="brand">Mağazala</div>
       <nav className="nav">{sections.map(([title,items]) => <div key={title}>
         <div className="nav-title">{title}</div>
-        {items.map(([label,href]) => <Link key={label} href={href}>{label}</Link>)}
+        {items.map(([label,href]) => <Link key={label} href={href}>{label}{href==='/notifications'&&unreadNotifications>0?<span className="badge active" style={{marginLeft:7}}>{unreadNotifications}</span>:null}</Link>)}
       </div>)}</nav>
     </aside>
     <main className="main">
@@ -49,6 +52,7 @@ export function AppShell({
           {displayName ? <span style={{color:'var(--muted)',fontSize:13}}>{displayName}</span> : null}
         </div>
         <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <Link className="action" href="/notifications">Bildirimler{unreadNotifications>0?` (${unreadNotifications})`:''}</Link>
           <span className="badge active">ACTIVE CORE</span>
           <form action="/api/auth/logout" method="post"><button className="action" type="submit">Çıkış</button></form>
         </div>
