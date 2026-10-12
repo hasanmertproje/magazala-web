@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 const items = [
-  ['Kullanıcılar', '/admin/users'], ['Paketler', '/admin/packages'], ['Provider Center', '/admin/providers'],
+  ['Müşteriler', '/admin/workspaces'], ['Kullanıcılar', '/admin/users'], ['Paketler', '/admin/packages'], ['Provider Center', '/admin/providers'],
   ['Modeller', '/admin/models'], ['Router', '/admin/router'], ['Tasarlayalım AI Talepleri', '/admin/requirements'], ['Sistem', '/admin/system'],
 ] as const;
 
