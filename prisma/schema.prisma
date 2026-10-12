@@ -82,6 +82,7 @@ model User {
   memberships  WorkspaceMember[]
   notifications Notification[]
   auditLogs    AuditLog[] @relation("AuditActor")
+  invitationsCreated WorkspaceInvitation[] @relation("InviteCreator")
 }
 
 model Workspace {
@@ -93,6 +94,7 @@ model Workspace {
   updatedAt   DateTime @updatedAt
   package     Package? @relation(fields: [packageId], references: [id])
   members     WorkspaceMember[]
+  invitations WorkspaceInvitation[]
   overrides   WorkspaceFeatureOverride[]
   quotas      UsageQuota[]
   usage       UsageLedger[]
@@ -114,6 +116,23 @@ model WorkspaceMember {
   user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@id([workspaceId, userId])
   @@index([userId])
+}
+
+model WorkspaceInvitation {
+  id              String        @id @default(cuid())
+  workspaceId     String
+  email           String
+  role            WorkspaceRole @default(USER)
+  tokenHash       String        @unique
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  revokedAt       DateTime?
+  createdByUserId String?
+  createdAt       DateTime      @default(now())
+  workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy       User?         @relation("InviteCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  @@index([workspaceId, email, createdAt])
+  @@index([email, expiresAt])
 }
 
 model Package {
