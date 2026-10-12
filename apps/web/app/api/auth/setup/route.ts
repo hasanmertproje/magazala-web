@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '../../../../lib/db';
 import { CORE_FEATURE_CATALOG } from '../../../../lib/feature-catalog';
-import { assertSameOrigin, isHtmlForm } from '../../../../lib/request-security';
+import { assertSameOrigin, isHtmlForm, publicRequestUrl } from '../../../../lib/request-security';
 import { issueSessionToken, SESSION_COOKIE, sessionCookieOptions } from '../../../../lib/session';
 
 const schema = z.object({
@@ -36,12 +36,12 @@ export async function POST(request: Request) {
       return { user, workspace };
     }, { isolationLevel: 'Serializable' });
 
-    const response = formRequest ? NextResponse.redirect(new URL('/', request.url), 303) : NextResponse.json({ ok: true, user: { id: result.user.id, email: result.user.email }, workspace: { id: result.workspace.id, name: result.workspace.name } }, { status: 201 });
+    const response = formRequest ? NextResponse.redirect(publicRequestUrl('/', request), 303) : NextResponse.json({ ok: true, user: { id: result.user.id, email: result.user.email }, workspace: { id: result.workspace.id, name: result.workspace.name } }, { status: 201 });
     response.cookies.set(SESSION_COOKIE, issueSessionToken(result.user.id), sessionCookieOptions());
     return response;
   } catch (error) {
     const code = error instanceof Error ? error.message : 'SETUP_FAILED';
-    if (formRequest) return NextResponse.redirect(new URL(`/setup?error=${encodeURIComponent(code)}`, request.url), 303);
+    if (formRequest) return NextResponse.redirect(publicRequestUrl(`/setup?error=${encodeURIComponent(code)}`, request), 303);
     return NextResponse.json({ ok: false, code }, { status: code === 'SETUP_ALREADY_COMPLETED' ? 409 : 400 });
   }
 }
