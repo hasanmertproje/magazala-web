@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireSuperAdminApi } from '../../../../../../../lib/auth';
-import { buildRequirementExport } from '../../../../../../../lib/requirement-export';
+import { requireSuperAdminApi } from '../../../../../../lib/auth';
+import { buildRequirementExport } from '../../../../../../lib/requirement-export';
 
 const querySchema = z.object({ format: z.enum(['md','json','txt']).default('md') });
 
