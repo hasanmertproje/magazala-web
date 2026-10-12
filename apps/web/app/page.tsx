@@ -1,1 +1,20 @@
-export default function Home(){return <div className="content"><span className="badge active">ACTIVE</span><h1 className="title" style={{marginTop:12}}>Tek merkezden üretin, araştırın ve yönetin.</h1><p className="subtitle">AI Design Studio ve Product Intelligence aktif çekirdek modüllerdir. Commerce alanları, gerçek operasyon akışları kesinleşmeden önce Beta ve Preview sınırlarında tutulur.</p><div className="grid"><section className="card span6"><h2>AI Design Studio</h2><p className="subtitle">Referans görseller, çıktı amacı, baskı ve vektör tercihleriyle kontrollü üretim.</p></section><section className="card span6"><h2>Product Intelligence</h2><p className="subtitle">Fikir modu ile yaratıcı öneri; araştırma modu ile kaynaklı ve doğrulanabilir pazar incelemesi.</p></section><section className="card span6"><span className="badge beta">BETA</span><h2>Commerce Core</h2><p className="subtitle">Ürün, SKU, barkod ve aktarım domainleri kontrollü olarak hazırlanıyor.</p></section><section className="card span6"><h2>Tasarlayalım AI</h2><p className="subtitle">Özellik isteklerini sohbet ederek netleştirir, kullanıcı onayı sonrası yapılandırılmış gereksinime dönüştürür.</p></section></div></div>}
+import { redirect } from 'next/navigation';
+import { getAuthContext } from '../lib/auth';
+import { db } from '../lib/db';
+
+export const dynamic = 'force-dynamic';
+
+export default async function Home() {
+  const auth = await getAuthContext();
+
+  if (auth) {
+    redirect('/create/design-studio');
+  }
+
+  const userCount = await db.user.count();
+  if (userCount === 0) {
+    redirect('/setup');
+  }
+
+  redirect('/login');
+}
