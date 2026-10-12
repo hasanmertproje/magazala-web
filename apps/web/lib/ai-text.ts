@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { TASARLAYALIM_AI_SYSTEM_PROMPT } from '@magazala/core';
 import { db } from './db';
 import { revealProviderSecret } from './provider-credentials';
+import { supportsTextRuntime } from './provider-runtime';
 
 export type TextChatMessage = { role: 'user' | 'assistant'; content: string };
 
@@ -54,11 +55,13 @@ async function loadCandidates() {
       },
     },
   });
-  return models.sort((a, b) =>
-    a.provider.priority - b.provider.priority ||
-    a.provider.fallbackPriority - b.provider.fallbackPriority ||
-    (a.latencyMsP50 ?? Number.MAX_SAFE_INTEGER) - (b.latencyMsP50 ?? Number.MAX_SAFE_INTEGER),
-  );
+  return models
+    .filter((model) => supportsTextRuntime(model.provider.slug))
+    .sort((a, b) =>
+      a.provider.priority - b.provider.priority ||
+      a.provider.fallbackPriority - b.provider.fallbackPriority ||
+      (a.latencyMsP50 ?? Number.MAX_SAFE_INTEGER) - (b.latencyMsP50 ?? Number.MAX_SAFE_INTEGER),
+    );
 }
 
 async function invokeNvidia(candidate: Candidate, secret: string, input: GenerateTextInput): Promise<ProviderCallResult> {
@@ -94,7 +97,7 @@ async function invokeGemini(candidate: Candidate, secret: string, input: Generat
   const model = candidate.externalModelId.replace(/^models\//, '');
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
-    headers: { 'x-goog-api-key': secret, 'Content-Type': 'application/json', Accept: 'application/json', 'x-goog-api-client': 'magazala/0.3.0' },
+    headers: { 'x-goog-api-key': secret, 'Content-Type': 'application/json', Accept: 'application/json', 'x-goog-api-client': 'magazala/0.4.0' },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: input.systemPrompt ?? TASARLAYALIM_AI_SYSTEM_PROMPT }] },
       contents: input.messages.map((message) => ({
@@ -200,7 +203,7 @@ export async function generateProviderBackedText(input: GenerateTextInput) {
   for (const candidate of candidates) {
     const credential = candidate.provider.credentials[0];
     if (!credential) continue;
-    if (!['nvidia-nim', 'google-gemini', 'cloudflare-workers-ai'].includes(candidate.provider.slug)) continue;
+    if (!supportsTextRuntime(candidate.provider.slug)) continue;
     attemptedSupportedAdapter = true;
 
     const requestId = randomUUID();
