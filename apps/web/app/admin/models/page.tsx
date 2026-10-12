@@ -1,6 +1,6 @@
 import { ModelDiscovery } from '../../../components/model-discovery';
 import { db } from '../../../lib/db';
-import { supportsImageRuntime, supportsTextRuntime } from '../../../lib/provider-runtime';
+import { supportsImageToImageRuntime, supportsTextRuntime, supportsTextToImageRuntime } from '../../../lib/provider-runtime';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +17,7 @@ export default async function ModelsAdminPage({ searchParams }: { searchParams: 
   const readyProviderIds = new Set(providers.filter((provider) => provider.enabled && provider.credentials.length > 0).map((provider) => provider.id));
   const enabledModels = models.filter((model) => model.enabled && readyProviderIds.has(model.providerId));
   const textReady = enabledModels.some((model) => supportsTextRuntime(model.provider.slug) && model.capabilities.some((item) => item.capability === 'text_generation'));
-  const imageReady = enabledModels.some((model) => model.commercialUseAllowed && supportsImageRuntime(model.provider.slug) && model.capabilities.some((item) => item.capability === 'text_to_image'));
+  const imageReady = enabledModels.some((model) => model.commercialUseAllowed && supportsTextToImageRuntime(model.provider.slug) && model.capabilities.some((item) => item.capability === 'text_to_image'));
 
   return <div className="content">
     <h1 className="page-title">Model Registry</h1>
@@ -36,7 +36,13 @@ export default async function ModelsAdminPage({ searchParams }: { searchParams: 
       <ModelDiscovery providers={providers.map((provider) => ({ id: provider.id, name: provider.name, slug: provider.slug, enabled: provider.enabled, hasCredential: provider.credentials.length > 0 }))} />
 
       <section className="card span-12"><h3>Kayıtlı modeller</h3>{models.length === 0 && <div className="empty"><div><strong>Henüz model kaydı yok</strong><br/><span>Önce Provider Center üzerinden sağlayıcı ve anahtar yapılandırın; desteklenen sağlayıcılarda yukarıdaki keşif alanıyla gerçek model ID’lerini çekebilirsiniz.</span></div></div>}{models.map((model) => {
-        const runtimeReady = (model.capabilities.some((item) => item.capability === 'text_generation') && supportsTextRuntime(model.provider.slug)) || (model.capabilities.some((item) => item.capability === 'text_to_image') && supportsImageRuntime(model.provider.slug));
+        const hasText = model.capabilities.some((item) => item.capability === 'text_generation');
+        const hasTextToImage = model.capabilities.some((item) => item.capability === 'text_to_image');
+        const hasImageToImage = model.capabilities.some((item) => item.capability === 'image_to_image');
+        const runtimeReady =
+          (hasText && supportsTextRuntime(model.provider.slug)) ||
+          (hasTextToImage && supportsTextToImageRuntime(model.provider.slug)) ||
+          (hasImageToImage && supportsImageToImageRuntime(model.provider.slug));
         return <div key={model.id} style={{display:'grid',gap:10,padding:'16px 0',borderBottom:'1px solid var(--line)'}}><div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center'}}><div><strong>{model.name}</strong><div style={{color:'var(--muted)',fontSize:13}}>{model.provider.name} · {model.externalModelId}</div></div><form action={`/api/admin/models/${model.id}/toggle`} method="post"><button className={`action ${model.enabled ? '' : 'primary'}`} type="submit">{model.enabled ? 'Devre dışı bırak' : 'Etkinleştir'}</button></form></div><div style={{display:'flex',gap:7,flexWrap:'wrap'}}>{model.capabilities.map((item) => <span className="badge" key={item.capability}>{item.capability}</span>)}<span className={`badge ${model.enabled ? 'active' : ''}`}>{model.enabled ? 'AKTİF' : 'PASİF'}</span><span className={`badge ${runtimeReady ? 'active' : ''}`}>{runtimeReady ? 'RUNTIME DESTEKLİ' : 'RUNTIME ADAPTÖRÜ YOK'}</span>{model.commercialUseAllowed ? <span className="badge active">TİCARİ KULLANIM DOĞRULANDI</span> : <span className="badge">TİCARİ KULLANIM DOĞRULANMADI</span>}</div></div>;
       })}</section>
 
