@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { db } from './db';
 
 export async function assertParentGeneration(workspaceId: string, parentGenerationId?: string) {
@@ -18,16 +18,14 @@ export async function attachGenerationLineage(
   parentGenerationId?: string,
 ) {
   if (!parentGenerationId) return;
-  await tx.$executeRaw`
-    INSERT INTO "GenerationLineage" ("childGenerationId", "parentGenerationId")
-    VALUES (${childGenerationId}, ${parentGenerationId})
-  `;
+  await tx.generationLineage.create({ data: { childGenerationId, parentGenerationId } });
 }
 
 export async function loadGenerationParents(generationIds: string[]) {
   if (generationIds.length === 0) return new Map<string, string>();
-  const rows = await db.$queryRaw<Array<{ childGenerationId: string; parentGenerationId: string }>>(
-    Prisma.sql`SELECT "childGenerationId", "parentGenerationId" FROM "GenerationLineage" WHERE "childGenerationId" IN (${Prisma.join(generationIds)})`,
-  );
+  const rows = await db.generationLineage.findMany({
+    where: { childGenerationId: { in: generationIds } },
+    select: { childGenerationId: true, parentGenerationId: true },
+  });
   return new Map(rows.map((row) => [row.childGenerationId, row.parentGenerationId]));
 }
