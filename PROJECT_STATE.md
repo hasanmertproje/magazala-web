@@ -5,7 +5,7 @@ Project: Magazala Web
 Version: 0.1.0 (package metadata; no release claim)
 Repository: https://github.com/hasanmertproje/magazala-web
 Default branch: main
-Working branch: hardening/production-gates-20261013
+Current branch: main
 Baseline SHA: d07fd280521527fefd88750473c6ae2ccca21246
 
 ## Stack
@@ -23,13 +23,19 @@ Session/setup, workspaces/invitations, SaaS package/entitlements, provider regis
 Beta: products, SKU/barcode, import/export, automation.
 Preview only: Trendyol, inventory/warehouse, order fulfillment.
 
+## Merged and verified changes
+- PR #18 merged as 57a20627e5ed5657d10b0baad276b72c751c2932 (CI #75 success)
+- PR #19 merged as b3704c688c57264dae526c3507d303fc3240c3a8 (CI #77 success)
+- Automated request-origin regression tests added and executed via npm run check.
+
 ## Current changes
 - Public redirect URL derivation no longer trusts X-Forwarded-Host / X-Forwarded-Proto; requires APP_URL in production; production public origin HTTPS except loopback.
 - Docker multi-stage build separates build/runtime and runtime uses non-root node user.
 - CI workflow now triggers on push to main in addition to pull_request.
 
 ## Test evidence
-- GitHub file mutations succeeded. CI build/typecheck/test/runtime smoke NOT YET verified for this branch.
+- PR #18 CI #75: success (npm ci, audit, Prisma validation/migration, preflight, core and type checks, build, runtime smoke).
+- PR #19 CI #77: success (same gates plus new request-origin regression suite).
 - No live Railway, external provider, PostgreSQL or S3 acceptance testing has been performed.
 - CI currently has a PostgreSQL service but no live S3 integration test.
 - A successful CI run and independent security validation are release gates.
@@ -41,7 +47,7 @@ Preview only: Trendyol, inventory/warehouse, order fulfillment.
 - Verify credentials, CSP, CSRF, rate limiting, upload scanning, storage ACL, dependencies, secrets and container filesystem.
 
 ## Open issues
-1. Verify CI status and fix any failures before merge.
+1. Monitor main push CI and validate live deployment before production release.
 2. Improve storage readiness checks and explicit e2e tests.
 3. Review auth/session, tenancy boundaries, authorization and request security.
 4. Verify AI real provider calls, cost/quota enforcement, private assets.
