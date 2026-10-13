@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     const passwordHash = await hash(password, 12);
     await db.$transaction(async tx => {
       // Lock makes simultaneous requests with the same token serialize.
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(738118093)`;
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(738118093)`;
       const alreadyUsed = await tx.auditLog.findFirst({
         where: { action: 'platform.admin.recovery', entityType: 'RecoveryToken', entityId: tokenHash },
         select: { id: true },
