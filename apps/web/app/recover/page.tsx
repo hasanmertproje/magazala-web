@@ -43,7 +43,7 @@ export default function RecoverPage() {
         <p className="page-subtitle">Bu ekran yalnızca süreli yönetici kurtarma anahtarı etkinleştirildiğinde kullanılabilir. Mevcut verileri silmez.</p>
         {error && <p role="alert" style={{color:'#ff9b9b'}}>{error === 'RECOVERY_NOT_AUTHORIZED' ? 'Anahtar geçersiz, süresi dolmuş ya da yönetici e-postası eşleşmiyor.' : error === 'RECOVERY_TOKEN_USED' ? 'Bu anahtar daha önce kullanılmış.' : 'Kurtarma işlemi tamamlanamadı.'}</p>}
         <form onSubmit={submit} style={{display:'grid',gap:12,marginTop:22}}>
-          <label>Yönetici e-postası<input className="input" name="email" type="email" autoComplete="email" required /></label>
+          <label>Yönetici e-postası (birden fazla süper yönetici varsa zorunlu)<input className="input" name="email" type="email" autoComplete="email" /></label>
           <label>Tek kullanımlık kurtarma anahtarı<input className="input" name="token" type="password" required minLength={32} autoComplete="off" /></label>
           <label>Yeni parola<input className="input" name="password" type="password" autoComplete="new-password" required minLength={12} maxLength={128} /></label>
           <button className="action primary" type="submit" disabled={saving}>{saving?'Doğrulanıyor…':'Parolamı sıfırla'}</button>
