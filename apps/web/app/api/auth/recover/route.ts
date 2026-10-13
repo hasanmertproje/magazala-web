@@ -8,7 +8,7 @@ import { assertSameOrigin } from '../../../../lib/request-security';
 export const dynamic = 'force-dynamic';
 
 const inputSchema = z.object({
-  email: z.string().trim().email().max(254).transform(v => v.toLowerCase()),
+  email: z.union([z.literal(''), z.string().trim().email().max(254).transform(v => v.toLowerCase())]).optional(),
   password: z.string().min(12).max(128),
   token: z.string().min(32).max(256),
 });
@@ -40,8 +40,9 @@ export async function POST(request: Request) {
         select: { id: true },
       });
       if (alreadyUsed) throw new Error('RECOVERY_TOKEN_USED');
-      const admin = await tx.user.findFirst({ where: { email, isSuperAdmin: true }, select: { id: true } });
-      if (!admin) throw new Error('RECOVERY_NOT_AUTHORIZED');
+      const admins = await tx.user.findMany({ where: { isSuperAdmin: true, ...(email ? { email } : {}) }, select: { id: true }, take: 2 });
+      if (admins.length !== 1) throw new Error('RECOVERY_NOT_AUTHORIZED');
+      const admin = admins[0];
       await tx.user.update({ where: { id: admin.id }, data: { passwordHash, sessionRevokedAt: new Date() } });
       await tx.auditLog.create({
         data: { actorUserId: admin.id, action: 'platform.admin.recovery', entityType: 'RecoveryToken',
