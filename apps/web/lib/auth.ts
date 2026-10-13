@@ -20,6 +20,7 @@ export async function getAuthContext() {
     },
   });
   if (!user) return null;
+  if (user.sessionRevokedAt && claims.iat * 1000 <= user.sessionRevokedAt.getTime()) return null;
 
   const requestedWorkspaceId = jar.get(ACTIVE_WORKSPACE_COOKIE)?.value;
   const membership = user.memberships.find((item) => item.workspaceId === requestedWorkspaceId) ?? user.memberships[0] ?? null;
