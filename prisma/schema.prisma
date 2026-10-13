@@ -79,6 +79,7 @@ model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String
+  sessionRevokedAt DateTime?
   displayName  String?
   isSuperAdmin Boolean  @default(false)
   createdAt    DateTime @default(now())
