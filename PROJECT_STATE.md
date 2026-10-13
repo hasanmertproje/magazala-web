@@ -64,3 +64,10 @@ bash scripts/runtime-smoke.sh
 
 ## Next task
 Review new PR CI results, resolve any regressions, then add dedicated authorization/isolation integration tests and runtime object storage health checks. Do not claim production-ready until docs/PRODUCTION_ACCEPTANCE.md passes against live configuration.
+
+## Account recovery change (2026-10-13)
+- PR #20 merged and deployed to Railway (commit 8b9a1b7); /setup is super-admin-only after first user exists.
+- PR #21 adds gated single-use /recover route and user session revocation migration; requires CI and Railway deployment validation.
+- Operator must set ADMIN_RECOVERY_TOKEN (>=32 random characters) and ADMIN_RECOVERY_EXPIRES_AT (ISO8601 short TTL) on the Railway web service before recovery.
+- Recovery requires a matching super-admin email, or when omitted requires exactly one super-admin. Never creates admins or clears database.
+- After successful recovery, remove temporary Railway recovery variables and verify old JWT sessions are rejected.
