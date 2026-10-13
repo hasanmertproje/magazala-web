@@ -6,7 +6,8 @@ export function publicRequestUrl(path: string, request: Request): URL {
   const configured = process.env.APP_URL?.trim();
   if (configured) {
     const origin = new URL(configured);
-    if (process.env.NODE_ENV === 'production' && origin.protocol !== 'https:') {
+    const localHttp = (origin.hostname === 'localhost' || origin.hostname === '127.0.0.1') && origin.protocol === 'http:';
+    if (process.env.NODE_ENV === 'production' && origin.protocol !== 'https:' && !localHttp) {
       throw new Error('PUBLIC_ORIGIN_HTTPS_REQUIRED');
     }
     return new URL(path, origin);
