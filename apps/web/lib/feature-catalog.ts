@@ -6,6 +6,7 @@ export const CORE_FEATURE_CATALOG = [
   { key: 'product_intelligence.basic', label: 'Ürün fikirleri', module: 'Product Intelligence', status: 'ACTIVE' as const, description: 'Pazar verisi iddiası taşımayan yaratıcı ürün fikirleri.' },
   { key: 'product_intelligence.web_research', label: 'Kaynaklı ürün araştırması', module: 'Product Intelligence', status: 'ACTIVE' as const, description: 'Dış kaynakları provenance bilgisiyle kullanan araştırma.' },
   { key: 'tasarlayalim_ai.discovery', label: 'Özellikler Hakkında Konuş', module: 'Tasarlayalım AI', status: 'ACTIVE' as const, description: 'Kullanıcı ihtiyacını yapılandırılmış gereksinime dönüştürme.' },
+  { key: 'commerce.stores.dashboard', label: 'Mağaza yönetimi paneli', module: 'Commerce', status: 'ACTIVE' as const, description: 'Mağaza bağlantıları ve durumlarını çalışma alanında görüntüleme.' },
   { key: 'commerce.products', label: 'Ürünler', module: 'Commerce', status: 'BETA' as const },
   { key: 'commerce.barcode', label: 'SKU ve barkod', module: 'Commerce', status: 'BETA' as const },
   { key: 'commerce.import_export', label: 'Import / Export', module: 'Commerce', status: 'BETA' as const },
