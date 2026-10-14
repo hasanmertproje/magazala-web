@@ -7,12 +7,10 @@ import type { ReactNode } from 'react';
 
 const userSections = [
   ['Genel', [['Kontrol Paneli','/dashboard']]],
-  ['Stüdyo', [['Tasarım Stüdyosu','/create/design-studio'],['Ürün Fikirleri','/create/product-intelligence']]],
-  ['Çalışma Alanı', [['Projeler','/workspace/projects'],['Dosyalar','/workspace/assets']]],
-  ['Ticaret', [['Ürünler','/commerce/products'],['Barkod Yönetimi','/commerce/barcodes'],['Mağazalar','/commerce/stores'],['Stok Yönetimi','/commerce/inventory'],['İçe / Dışa Aktarım','/commerce/import-export']]],
-  ['Otomasyon', [['İş Akışları','/automation/workflows']]],
-  ['Hesap', [['Bildirimler','/notifications']]],
-  ['Destek', [['Özellikler Hakkında Konuş','/help/features'],['Bilgilendirme','/help/info']]],
+  ['Mağaza Yönetimi', [['Mağazalar ve Entegrasyonlar','/commerce/stores'],['Ürün Kataloğu','/commerce/products'],['Stok ve Depo','/commerce/inventory'],['Barkod ve SKU','/commerce/barcodes'],['Veri Aktarımı','/commerce/import-export']]],
+  ['Operasyon', [['İş Akışları','/automation/workflows'],['Projeler','/workspace/projects'],['Dosyalar','/workspace/assets']]],
+  ['Eklentiler', [['Görsel Stüdyosu','/create/design-studio'],['Ürün Araştırması','/create/product-intelligence']]],
+  ['Hesap ve Destek', [['Bildirimler','/notifications'],['Paketim ve Kredilerim','/billing'],['Yardım','/help/info']]],
 ] as const;
 
 const adminSections = [
@@ -23,10 +21,10 @@ type WorkspaceOption = { id: string; name: string };
 
 function sectionsLabel(pathname: string): string {
   if (pathname.startsWith('/dashboard')) return 'Genel';
-  if (pathname.startsWith('/create/')) return 'Stüdyo';
-  if (pathname.startsWith('/commerce/')) return 'Ticaret';
+  if (pathname.startsWith('/create/')) return 'Eklentiler';
+  if (pathname.startsWith('/commerce/')) return 'Mağaza Yönetimi';
   if (pathname.startsWith('/workspace/')) return 'Çalışma Alanı';
-  if (pathname.startsWith('/automation/')) return 'Otomasyon';
+  if (pathname.startsWith('/automation/')) return 'Operasyon';
   if (pathname.startsWith('/admin/')) return 'Yönetim';
   return 'Genel';
 }
@@ -63,7 +61,7 @@ export function AppShell({
     {mobileMenuOpen && <button type="button" className="sidebar-backdrop" aria-label="Menüyü kapat" onClick={() => setMobileMenuOpen(false)} />}
 
     <aside className={`sidebar ${mobileMenuOpen ? "sidebar-open" : ""}`} id="main-navigation" aria-label="Ana menü">
-      <div className="sidebar-heading"><Link href="/create/design-studio" className="brand brand-lockup"><span className="brand-mark" aria-hidden="true">EP</span><span className="brand-wordmark">EntegrePilot<small>Commerce Workspace</small></span></Link><button type="button" className="sidebar-close action" onClick={() => setMobileMenuOpen(false)} aria-label="Menüyü kapat">✕</button></div>
+      <div className="sidebar-heading"><Link href="/dashboard" className="brand brand-lockup"><span className="brand-mark" aria-hidden="true">EP</span><span className="brand-wordmark">EntegrePilot<small>Commerce Workspace</small></span></Link><button type="button" className="sidebar-close action" onClick={() => setMobileMenuOpen(false)} aria-label="Menüyü kapat">✕</button></div>
       <nav className="nav"><div className="nav-overview">ÇALIŞMA ALANI</div>{sections.map(([title,items], sectionIndex) => <div key={title} className="nav-section">
         <div className="nav-title"><span>{String(sectionIndex + 1).padStart(2, "0")}</span>{title}</div>
         {items.map(([label,href]) => <Link key={label} href={href} aria-current={pathname === href ? "page" : undefined} className={pathname === href ? "nav-link is-current" : "nav-link"} onClick={() => setMobileMenuOpen(false)}><span className="nav-link-indicator" aria-hidden="true" />{label}{href==='/notifications'&&unreadNotifications>0?<span className="badge active" style={{marginLeft:7}}>{unreadNotifications}</span>:null}</Link>)}
