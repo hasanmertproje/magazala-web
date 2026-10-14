@@ -13,7 +13,7 @@ export default async function SetupPage({ searchParams }: { searchParams: Promis
   const { error } = await searchParams;
   return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:24}}>
     <section className="card" style={{width:'min(520px,100%)'}}>
-      <div className="brand" style={{marginBottom:24}}>Magazala</div>
+      <div className="brand" style={{marginBottom:24}}>EntegrePilot</div>
       <h1 className="page-title">{installed ? 'Yeni çalışma alanı kurulumu' : 'İlk yönetici kurulumu'}</h1>
       <p className="page-subtitle">{installed
         ? 'Mevcut veriler ve hesaplar korunur. Süper yönetici olarak yeni bir çalışma alanı oluşturabilirsiniz.'
