@@ -685,3 +685,11 @@ model MarketplaceListing {
   @@unique([connectorId, marketplaceProductId, marketplaceVariantId])
   @@index([masterProductId])
 }
+model LoginAttemptBucket {
+  key         String   @id
+  attempts    Int      @default(0)
+  windowStart DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([windowStart])
+}
+
