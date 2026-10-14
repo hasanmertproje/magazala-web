@@ -114,3 +114,10 @@ Keep unavailable features marked Preview; never publish fake revenue, order coun
 - Created internal manual order intake, list/filter and operator status updates. Every creation and transition produces audit logs/event records; tenant membership and admin permissions required for writes.
 - Marketplace orders remain read-only and no live Trendyol order sync, shipment, invoicing or payment collection is claimed.
 - Release gates: Prisma clean migration; typecheck/build/smoke; tenant/transition/replay tests still needed, followed by UI mobile browser acceptance and Trendyol V2 sandbox contract tests before external sync.
+
+## Revised priority order — 2026-10-15
+1. Professional commerce operations dashboard and responsive design for mobile, tablet and desktop (in progress in design/commerce-operations-dashboard-v2-20261015).
+2. SaaS security: tenant isolation and authorization, billing/credits correctness, concurrency/security tests.
+3. Operational automation: order/stock lifecycle, reservations, consistency and reconciliation.
+4. Last: live Trendyol V2 order integration, after sandbox contract tests and explicit approval for external writes.
+Dashboard milestone: replace decorative marketing emphasis with real order, inventory and shop status; show latest internal order records and meaningful zero states, retain data provenance. No fabricated revenue/marketplace traffic figures. This is not an end-to-end design acceptance claim; viewport browser screenshots and keyboard/a11y verification remain pending.
