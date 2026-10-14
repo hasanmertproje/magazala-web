@@ -164,3 +164,20 @@ html,body{background:var(--bg);color:var(--text)}
 .admin-override-form{display:grid;grid-template-columns:minmax(190px,1.5fr) minmax(90px,.4fr) minmax(90px,.6fr) minmax(145px,.8fr) auto;gap:10px;align-items:center}
 @media(max-width:1100px){.admin-override-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.admin-override-form{grid-template-columns:1fr}.admin-override-form .action{width:100%}.topbar-user{display:none}}
+
+
+/* Warehouse management — responsive operational forms and actual stock tables */
+.inventory-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:18px;margin-top:23px;align-items:start}
+.inventory-grid h2,.inventory-grid h3{margin-top:0;font-size:17px}
+.inventory-form{display:grid;gap:12px;margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.inventory-form label{display:grid;gap:6px;color:var(--muted);font-size:13px;font-weight:650}
+.inventory-form .action{justify-self:start}
+.inventory-warehouse-list{display:grid;gap:10px;margin-top:20px}
+.inventory-warehouse-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:9px;background:var(--panel2)}
+.inventory-warehouse-row strong{font-size:13px}
+.store-table-wrap{overflow:auto;max-width:100%;-webkit-overflow-scrolling:touch}
+.store-table{width:100%;border-collapse:collapse;min-width:680px;text-align:left}
+.store-table th,.store-table td{padding:13px 12px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:middle}
+.store-table th{color:var(--muted);font-weight:750;white-space:nowrap}
+@media(max-width:850px){.inventory-grid{grid-template-columns:1fr}}
+@media(max-width:500px){.inventory-form .action{width:100%}.inventory-warehouse-row{flex-wrap:wrap}}
