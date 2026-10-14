@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 const userSections = [
   ['Üretim', [['AI Design Studio','/create/design-studio'],['Ürün Fikirleri','/create/product-intelligence']]],
   ['Çalışma Alanı', [['Projeler','/workspace/projects'],['Dosyalar','/workspace/assets']]],
-  ['Commerce', [['Ürünler · Beta','/commerce/products'],['Barkodlar · Beta','/commerce/barcodes'],['Mağazalar · Preview','/commerce/stores'],['Envanter · Preview','/commerce/inventory'],['Import / Export · Beta','/commerce/import-export']]],
+  ['Commerce', [['Ürünler · Beta','/commerce/products'],['Barkodlar · Beta','/commerce/barcodes'],['EntegrePilotr · Preview','/commerce/stores'],['Envanter · Preview','/commerce/inventory'],['Import / Export · Beta','/commerce/import-export']]],
   ['Otomasyon', [['İş Akışları · Beta','/automation/workflows']]],
   ['Hesap', [['Bildirimler','/notifications']]],
   ['Yardım & Keşif', [['Özellikler Hakkında Konuş','/help/features'],['Bilgilendirme','/help/info']]],
@@ -36,7 +36,7 @@ export function AppShell({
   const sections = isSuperAdmin ? [...userSections, ...adminSections] : userSections;
   return <div className="shell">
     <aside className="sidebar">
-      <div className="brand">Mağazala</div>
+      <div className="brand">EntegrePilot</div>
       <nav className="nav">{sections.map(([title,items]) => <div key={title}>
         <div className="nav-title">{title}</div>
         {items.map(([label,href]) => <Link key={label} href={href}>{label}{href==='/notifications'&&unreadNotifications>0?<span className="badge active" style={{marginLeft:7}}>{unreadNotifications}</span>:null}</Link>)}
