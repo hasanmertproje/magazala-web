@@ -70,7 +70,7 @@ export default async function InvitePage({ searchParams }: { searchParams: Promi
 }
 
 function InviteShell({ children }: { children: ReactNode }) {
-  return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:24}}><section className="card" style={{width:'min(560px,100%)'}}><div className="brand" style={{marginBottom:22}}>Magazala</div>{children}</section></main>;
+  return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:24}}><section className="card" style={{width:'min(560px,100%)'}}><div className="brand" style={{marginBottom:22}}>EntegrePilot</div>{children}</section></main>;
 }
 
 function InviteError({ message }: { message: string }) {
