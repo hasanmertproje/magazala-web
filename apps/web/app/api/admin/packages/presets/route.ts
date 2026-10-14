@@ -4,9 +4,9 @@ import { db } from '../../../../../lib/db';
 import { assertSameOrigin, isHtmlForm, publicRequestUrl } from '../../../../../lib/request-security';
 
 const PLAN_MATRIX = [
-  { slug: 'baslangic', name: 'Başlangıç', imageCredits: 20, researchCredits: 0, enabled: ['commerce.stores.dashboard','commerce.products','commerce.barcode','commerce.import_export','ai.design.generate'] },
-  { slug: 'gelisim', name: 'Gelişim', imageCredits: 100, researchCredits: 30, enabled: ['commerce.stores.dashboard','commerce.products','commerce.barcode','commerce.import_export','ai.design.generate','ai.design.reference','product_intelligence.basic','product_intelligence.web_research','automation.workflows'] },
-  { slug: 'kurumsal', name: 'Kurumsal', imageCredits: 500, researchCredits: 150, enabled: ['commerce.stores.dashboard','commerce.products','commerce.barcode','commerce.import_export','ai.design.generate','ai.design.reference','ai.design.vector','ai.design.print','product_intelligence.basic','product_intelligence.web_research','automation.workflows','tasarlayalim_ai.discovery'] },
+  { slug: 'baslangic', name: 'Başlangıç', imageCredits: 20, researchCredits: 0, enabled: ['inventory.basic','commerce.stores.dashboard','commerce.products','commerce.barcode','commerce.import_export','ai.design.generate'] },
+  { slug: 'gelisim', name: 'Gelişim', imageCredits: 100, researchCredits: 30, enabled: ['inventory.basic','commerce.stores.dashboard','commerce.products','commerce.barcode','commerce.import_export','ai.design.generate','ai.design.reference','product_intelligence.basic','product_intelligence.web_research','automation.workflows'] },
+  { slug: 'kurumsal', name: 'Kurumsal', imageCredits: 500, researchCredits: 150, enabled: ['inventory.basic','commerce.stores.dashboard','commerce.products','commerce.barcode','commerce.import_export','ai.design.generate','ai.design.reference','ai.design.vector','ai.design.print','product_intelligence.basic','product_intelligence.web_research','automation.workflows','tasarlayalim_ai.discovery'] },
 ] as const;
 
 export async function POST(request: Request) {
