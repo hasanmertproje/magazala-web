@@ -1,4 +1,4 @@
-# Magazala
+# EntegrePilot
 
 Modüler e-ticaret operasyonu, yaratıcı üretim ve ürün araştırma platformu.
 
@@ -32,6 +32,10 @@ Repo, çalışan production çekirdeği ile henüz kullanıcı iş akışı kesi
 
 Bu alanlar iş akışı doğrulanmadan production senkronizasyonu yapmaz.
 
+## Alan adı ve PoyrazHosting dağıtımı
+
+Geçici hedef alan adı: https://entegrepilot.tasarlayalim.com. PoyrazHosting Reseller P1, bu Next.js + PostgreSQL uygulamasının tamamını barındırdığı doğrulanmış bir çalışma ortamı değildir. Mevcut Railway uygulamasını koruyarak DNS/custom domain üzerinden yayınlamak için [dağıtım kılavuzunu](docs/ENTEGREPILOT_CPANEL_DEPLOYMENT.md) kullanın.
+
 ## Yerel kurulum
 
 ```bash
@@ -43,7 +47,7 @@ npm run preflight:production
 npm run dev
 ```
 
-İlk açılışta `/setup` üzerinden ilk super-admin ve ilk workspace oluşturulur. Setup yalnız kullanıcı tablosu boşken çalışır.
+İlk açılışta `/setup` üzerinden ilk super-admin ve ilk workspace oluşturulur. İlk kurulum kullanıcı tablosu boşken çalışır. Sonraki /setup erişimleri oturum açmış süper yöneticilerle sınırlıdır.
 
 ## Production akışı
 
