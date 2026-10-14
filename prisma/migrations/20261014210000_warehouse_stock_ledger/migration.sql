@@ -1,0 +1,18 @@
+CREATE TABLE "Warehouse" ("id" TEXT NOT NULL, "workspaceId" TEXT NOT NULL, "name" TEXT NOT NULL, "code" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "Warehouse_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "StockBalance" ("id" TEXT NOT NULL, "workspaceId" TEXT NOT NULL, "warehouseId" TEXT NOT NULL, "productId" TEXT NOT NULL, "quantity" INTEGER NOT NULL DEFAULT 0, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "StockBalance_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "StockMovement" ("id" TEXT NOT NULL, "workspaceId" TEXT NOT NULL, "warehouseId" TEXT NOT NULL, "productId" TEXT NOT NULL, "quantityDelta" INTEGER NOT NULL, "quantityAfter" INTEGER NOT NULL, "reason" TEXT NOT NULL, "idempotencyKey" TEXT NOT NULL, "actorUserId" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "StockMovement_pkey" PRIMARY KEY ("id"));
+CREATE UNIQUE INDEX "Warehouse_workspaceId_code_key" ON "Warehouse"("workspaceId","code");
+CREATE INDEX "Warehouse_workspaceId_name_idx" ON "Warehouse"("workspaceId","name");
+CREATE UNIQUE INDEX "StockBalance_warehouseId_productId_key" ON "StockBalance"("warehouseId","productId");
+CREATE INDEX "StockBalance_workspaceId_productId_idx" ON "StockBalance"("workspaceId","productId");
+CREATE UNIQUE INDEX "StockMovement_workspaceId_idempotencyKey_key" ON "StockMovement"("workspaceId","idempotencyKey");
+CREATE INDEX "StockMovement_workspaceId_createdAt_idx" ON "StockMovement"("workspaceId","createdAt");
+CREATE INDEX "StockMovement_warehouseId_productId_createdAt_idx" ON "StockMovement"("warehouseId","productId","createdAt");
+ALTER TABLE "Warehouse" ADD CONSTRAINT "Warehouse_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockBalance" ADD CONSTRAINT "StockBalance_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockBalance" ADD CONSTRAINT "StockBalance_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockBalance" ADD CONSTRAINT "StockBalance_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockMovement" ADD CONSTRAINT "StockMovement_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockMovement" ADD CONSTRAINT "StockMovement_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockMovement" ADD CONSTRAINT "StockMovement_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockBalance" ADD CONSTRAINT "StockBalance_quantity_nonnegative" CHECK ("quantity" >= 0);
