@@ -93,4 +93,18 @@ curl -fsS -b "$COOKIE_JAR" -H "Origin: $BASE_URL" \
 curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/commerce/products" | grep -F 'CI Catalog Product' >/dev/null
 curl -fsS -b "$COOKIE_JAR" "$BASE_URL/dashboard" | grep -F 'Genel Bakış' >/dev/null
 
+# Distributed throttle: reject password guessing after the defined limit.
+for attempt in $(seq 1 10); do
+  code=$(curl -sS -o /dev/null -w '%{http_code}' -H "Origin: $BASE_URL" \
+    -H 'Content-Type: application/json' \
+    --data '{"email":"rate-limit-nonexistent@example.com","password":"invalid"}' \
+    "$BASE_URL/api/auth/login")
+  if [[ "$code" != "401" ]]; then echo "Expected login 401 at attempt $attempt, got $code" >&2; exit 1; fi
+done
+blocked=$(curl -sS -o /dev/null -w '%{http_code}' -H "Origin: $BASE_URL" \
+  -H 'Content-Type: application/json' \
+  --data '{"email":"rate-limit-nonexistent@example.com","password":"invalid"}' \
+  "$BASE_URL/api/auth/login")
+if [[ "$blocked" != "429" ]]; then echo "Expected login throttle HTTP 429, got $blocked" >&2; exit 1; fi
+
 echo "Runtime smoke passed: auth, packages, subscription UI, product CRUD creation, access restrictions and dashboard."
