@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 
 const userSections = [
+  ['Genel', [['Kontrol Paneli','/dashboard']]],
   ['Stüdyo', [['Tasarım Stüdyosu','/create/design-studio'],['Ürün Fikirleri','/create/product-intelligence']]],
   ['Çalışma Alanı', [['Projeler','/workspace/projects'],['Dosyalar','/workspace/assets']]],
   ['Ticaret', [['Ürünler','/commerce/products'],['Barkod Yönetimi','/commerce/barcodes'],['Mağazalar','/commerce/stores'],['Stok Yönetimi','/commerce/inventory'],['İçe / Dışa Aktarım','/commerce/import-export']]],
@@ -21,6 +22,7 @@ const adminSections = [
 type WorkspaceOption = { id: string; name: string };
 
 function sectionsLabel(pathname: string): string {
+  if (pathname.startsWith('/dashboard')) return 'Genel';
   if (pathname.startsWith('/create/')) return 'Stüdyo';
   if (pathname.startsWith('/commerce/')) return 'Ticaret';
   if (pathname.startsWith('/workspace/')) return 'Çalışma Alanı';
