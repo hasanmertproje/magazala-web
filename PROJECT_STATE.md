@@ -98,3 +98,13 @@ Review new PR CI results, resolve any regressions, then add dedicated authorizat
 6. Global security hardening, CSRF/SSRF/rate-limiting boundary review, subdomain migration and secret expiry policy.
 
 Keep unavailable features marked Preview; never publish fake revenue, order counts or connected stores. Do not claim SaaS release readiness before these gates pass.
+
+## Warehouse and stock ledger milestone — 2026-10-14
+- Branch: feature/commerce-saas-hardening-20261014
+- New Prisma tables Warehouse, StockBalance and StockMovement; migration adds non-negative stock check and unique workspace/idempotency key.
+- POST warehouse and stock endpoints enforce authenticated tenant membership, admin write authorization, origin validation, product entitlement, audit logs, and idempotent stock movement.
+- Stock writes run inside SERIALIZABLE transactions with PostgreSQL advisory locks to serialize same-product/warehouse adjustments and prevent negative quantity.
+- Internal stock/depot UI replaces prior placeholder, including editable warehouses, real balances and recent movement ledger. Not connected to Trendyol or order fulfillment; no external write is enabled.
+- Test gate pending CI and production deployment. Before enabling public beta: include concurrency/tenant isolation e2e tests, app rate limiting, pagination and backup/restore drills.
+- Trendyol official docs announce V1 product/order deprecation for 2026-10-15. API V2 migration is required before any live product/order sync.
+- Dashboard visual references: MIT-licensed shadcn dashboard starter and Tabler patterns. No upstream code/skill bundled or claimed as integrated.
