@@ -71,3 +71,9 @@ Review new PR CI results, resolve any regressions, then add dedicated authorizat
 - Operator must set ADMIN_RECOVERY_TOKEN (>=32 random characters) and ADMIN_RECOVERY_EXPIRES_AT (ISO8601 short TTL) on the Railway web service before recovery.
 - Recovery requires a matching super-admin email, or when omitted requires exactly one super-admin. Never creates admins or clears database.
 - After successful recovery, remove temporary Railway recovery variables and verify old JWT sessions are rejected.
+
+## EntegrePilot brand and hosting — 2026-10-14
+- User selected EntegrePilot as the public brand; temporary domain: https://entegrepilot.tasarlayalim.com.
+- Keep technical/internal package and schema IDs untouched to avoid destructive changes.
+- PoyrazHosting Reseller P1 has not been verified as compatible with long-running Next.js + Prisma/PostgreSQL. Prefer Railway application + DB + S3 with custom domain DNS under tasarlayalim.com. See docs/ENTEGREPILOT_CPANEL_DEPLOYMENT.md.
+- Blockers for live custom-domain cutover: authoritative DNS access and Railway custom domain records/SSL verification. No DNS change, environment secret rotation, or DB migration to cPanel performed in this PR.
