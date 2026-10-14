@@ -51,16 +51,18 @@ export function AppShell({
   useEffect(() => { setMobileMenuOpen(false); }, [pathname]);
   useEffect(() => {
     if (!mobileMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setMobileMenuOpen(false); };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => { window.removeEventListener('keydown', onKeyDown); document.body.style.overflow = previousOverflow; };
   }, [mobileMenuOpen]);
   const sectionLabel = sectionsLabel(pathname);
   const sections = isSuperAdmin ? [...userSections, ...adminSections] : userSections;
   return <div className="shell">
     {mobileMenuOpen && <button type="button" className="sidebar-backdrop" aria-label="Menüyü kapat" onClick={() => setMobileMenuOpen(false)} />}
 
-    <aside className={`sidebar ${mobileMenuOpen ? "sidebar-open" : ""}`} id="main-navigation" aria-label="Ana menü">
+    <aside className={`sidebar ${mobileMenuOpen ? "sidebar-open" : ""}`} id="main-navigation" aria-label="Ana menü" aria-hidden={!mobileMenuOpen && undefined}>
       <div className="sidebar-heading"><Link href="/dashboard" className="brand brand-lockup"><span className="brand-mark" aria-hidden="true">EP</span><span className="brand-wordmark">EntegrePilot<small>Commerce Workspace</small></span></Link><button type="button" className="sidebar-close action" onClick={() => setMobileMenuOpen(false)} aria-label="Menüyü kapat">✕</button></div>
       <nav className="nav"><div className="nav-overview">ÇALIŞMA ALANI</div>{sections.map(([title,items], sectionIndex) => <div key={title} className="nav-section">
         <div className="nav-title"><span>{String(sectionIndex + 1).padStart(2, "0")}</span>{title}</div>
