@@ -49,8 +49,12 @@ export async function POST(request: Request) {
     if(form)return NextResponse.redirect(publicRequestUrl('/commerce/products?notice=created',request),303);
     return NextResponse.json({ok:true,product:{id:product.id,name:product.name}}, {status:201});
   } catch(error) {
-    const code=error instanceof Error ? error.message : 'PRODUCT_CREATE_FAILED';
+    const internalCode = error instanceof Error ? error.message : '';
+    const code = internalCode === 'FEATURE_DISABLED' ? 'FEATURE_DISABLED'
+      : error instanceof z.ZodError ? 'INVALID_PRODUCT_INPUT'
+      : typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002' ? 'DUPLICATE_PRODUCT_IDENTIFIER'
+      : 'PRODUCT_CREATE_FAILED';
     if(form)return NextResponse.redirect(publicRequestUrl(`/commerce/products?error=${encodeURIComponent(code)}`,request),303);
-    return NextResponse.json({ok:false,code},{status:code==='FEATURE_DISABLED'?403:400});
+    return NextResponse.json({ok:false,code},{status:code==='FEATURE_DISABLED'?403:code==='DUPLICATE_PRODUCT_IDENTIFIER'?409:400});
   }
 }

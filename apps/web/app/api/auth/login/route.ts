@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db } from '../../../../lib/db';
 import { assertSameOrigin, isHtmlForm, publicRequestUrl } from '../../../../lib/request-security';
 import { issueSessionToken, SESSION_COOKIE, sessionCookieOptions } from '../../../../lib/session';
+import { reserveLoginAttempt, clearLoginAttempts } from '../../../../lib/login-throttle';
 
 const schema = z.object({
   email: z.union([z.literal(''), z.string().email().max(254).transform((value) => value.trim().toLowerCase())]),
@@ -24,6 +25,13 @@ export async function POST(request: Request) {
     assertSameOrigin(request);
     const raw = formRequest ? Object.fromEntries(await request.formData()) : await request.json();
     const input = schema.parse(raw);
+    const loginIdentifier = input.email || '__sole_superadmin__';
+    const attempt = await reserveLoginAttempt(loginIdentifier);
+    if (!attempt.allowed) {
+      await delay(250);
+      if (formRequest) return NextResponse.redirect(publicRequestUrl('/login?error=TOO_MANY_ATTEMPTS', request), 303);
+      return NextResponse.json({ ok: false, code: 'TOO_MANY_ATTEMPTS' }, { status: 429, headers: { 'Retry-After': String(attempt.retryMinutes * 60) } });
+    }
     // Allow password-only login exclusively when exactly one super-admin exists.
     // A correct password is still required; all other users must supply an email.
     const adminCandidates = input.email ? [] : await db.user.findMany({ where: { isSuperAdmin: true }, take: 2 });
@@ -42,6 +50,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, code: 'INVALID_CREDENTIALS' }, { status: 401 });
     }
 
+    await clearLoginAttempts(loginIdentifier);
     const response = formRequest
       ? NextResponse.redirect(publicRequestUrl(safeNext(input.next), request), 303)
       : NextResponse.json({ ok: true });
