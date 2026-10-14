@@ -108,3 +108,9 @@ Keep unavailable features marked Preview; never publish fake revenue, order coun
 - Test gate pending CI and production deployment. Before enabling public beta: include concurrency/tenant isolation e2e tests, app rate limiting, pagination and backup/restore drills.
 - Trendyol official docs announce V1 product/order deprecation for 2026-10-15. API V2 migration is required before any live product/order sync.
 - Dashboard visual references: MIT-licensed shadcn dashboard starter and Tabler patterns. No upstream code/skill bundled or claimed as integrated.
+
+## Commerce orders foundation — 2026-10-14
+- Added CommerceOrder + CommerceOrderEvent, unique tenant/order number and connector/external order identifiers, amount nonnegative DB check, status transitions.
+- Created internal manual order intake, list/filter and operator status updates. Every creation and transition produces audit logs/event records; tenant membership and admin permissions required for writes.
+- Marketplace orders remain read-only and no live Trendyol order sync, shipment, invoicing or payment collection is claimed.
+- Release gates: Prisma clean migration; typecheck/build/smoke; tenant/transition/replay tests still needed, followed by UI mobile browser acceptance and Trendyol V2 sandbox contract tests before external sync.

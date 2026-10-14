@@ -111,6 +111,7 @@ model Workspace {
   products    Product[]
   connectors  StoreConnector[]
   customFields ProductCustomFieldDefinition[]
+  orders CommerceOrder[]
   warehouses Warehouse[]
   stockBalances StockBalance[]
   stockMovements StockMovement[]
@@ -707,6 +708,50 @@ model ExportJob {
   @@index([workspaceId, createdAt])
 }
 
+
+enum CommerceOrderStatus {
+  NEW
+  CONFIRMED
+  PACKING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model CommerceOrder {
+  id String @id @default(cuid())
+  workspaceId String
+  connectorId String?
+  externalOrderId String?
+  orderNumber String
+  source String @default("MANUAL")
+  status CommerceOrderStatus @default(NEW)
+  customerReference String?
+  currency String @default("TRY")
+  totalMinor Int @default(0)
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  workspace Workspace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+  connector StoreConnector? @relation(fields:[connectorId],references:[id],onDelete:SetNull)
+  events CommerceOrderEvent[]
+  @@unique([workspaceId, orderNumber])
+  @@unique([connectorId, externalOrderId])
+  @@index([workspaceId,status,createdAt])
+}
+
+model CommerceOrderEvent {
+  id String @id @default(cuid())
+  orderId String
+  actorUserId String
+  fromStatus CommerceOrderStatus?
+  toStatus CommerceOrderStatus
+  reason String?
+  createdAt DateTime @default(now())
+  order CommerceOrder @relation(fields:[orderId],references:[id],onDelete:Cascade)
+  @@index([orderId,createdAt])
+}
+
 model StoreConnector {
   id          String @id @default(cuid())
   workspaceId String
@@ -722,6 +767,7 @@ model StoreConnector {
   updatedAt   DateTime @updatedAt
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   listings    MarketplaceListing[]
+  orders CommerceOrder[]
   @@index([workspaceId, provider])
 }
 
