@@ -17,7 +17,8 @@ const productSchema = z.object({
 export async function GET() {
   const auth = await requireUserApi();
   if (!auth.ok) return NextResponse.json({ok:false, code:auth.code}, {status:auth.status});
-  await assertFeatureEnabled(auth.context.workspace.id, auth.context.user.isSuperAdmin, 'commerce.products').catch(() => null);
+  try { await assertFeatureEnabled(auth.context.workspace.id, auth.context.user.isSuperAdmin, 'commerce.products'); }
+  catch { return NextResponse.json({ok:false,code:'FEATURE_DISABLED'}, {status:403}); }
   const products = await db.product.findMany({
     where: { workspaceId:auth.context.workspace.id },
     select: { id:true,name:true,internalSku:true,status:true,price:true,currency:true,updatedAt:true },
