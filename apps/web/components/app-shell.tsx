@@ -62,7 +62,7 @@ export function AppShell({
   return <div className="shell">
     {mobileMenuOpen && <button type="button" className="sidebar-backdrop" aria-label="Menüyü kapat" onClick={() => setMobileMenuOpen(false)} />}
 
-    <aside className={`sidebar ${mobileMenuOpen ? "sidebar-open" : ""}`} id="main-navigation" aria-label="Ana menü" aria-hidden={!mobileMenuOpen && undefined}>
+    <aside className={`sidebar ${mobileMenuOpen ? "sidebar-open" : ""}`} id="main-navigation" aria-label="Ana menü">
       <div className="sidebar-heading"><Link href="/dashboard" className="brand brand-lockup"><span className="brand-mark" aria-hidden="true">EP</span><span className="brand-wordmark">EntegrePilot<small>Commerce Workspace</small></span></Link><button type="button" className="sidebar-close action" onClick={() => setMobileMenuOpen(false)} aria-label="Menüyü kapat">✕</button></div>
       <nav className="nav"><div className="nav-overview">ÇALIŞMA ALANI</div>{sections.map(([title,items], sectionIndex) => <div key={title} className="nav-section">
         <div className="nav-title"><span>{String(sectionIndex + 1).padStart(2, "0")}</span>{title}</div>
