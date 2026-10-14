@@ -11,6 +11,6 @@ export const CORE_FEATURE_CATALOG = [
   { key: 'commerce.barcode', label: 'SKU ve barkod', module: 'Commerce', status: 'BETA' as const },
   { key: 'commerce.import_export', label: 'Import / Export', module: 'Commerce', status: 'BETA' as const },
   { key: 'stores.trendyol', label: 'Trendyol bağlantısı', module: 'Commerce', status: 'PREVIEW' as const },
-  { key: 'inventory.basic', label: 'Envanter', module: 'Inventory', status: 'PREVIEW' as const },
+  { key: 'inventory.basic', label: 'Stok ve depo yönetimi', module: 'Inventory', status: 'BETA' as const },
   { key: 'automation.workflows', label: 'İş akışları', module: 'Automation', status: 'BETA' as const },
 ] as const;
