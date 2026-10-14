@@ -1,0 +1,11 @@
+CREATE TYPE "CommerceOrderStatus" AS ENUM ('NEW','CONFIRMED','PACKING','SHIPPED','DELIVERED','CANCELLED');
+CREATE TABLE "CommerceOrder" ("id" TEXT NOT NULL,"workspaceId" TEXT NOT NULL,"connectorId" TEXT,"externalOrderId" TEXT,"orderNumber" TEXT NOT NULL,"source" TEXT NOT NULL DEFAULT 'MANUAL',"status" "CommerceOrderStatus" NOT NULL DEFAULT 'NEW',"customerReference" TEXT,"currency" TEXT NOT NULL DEFAULT 'TRY',"totalMinor" INTEGER NOT NULL DEFAULT 0,"notes" TEXT,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL,CONSTRAINT "CommerceOrder_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "CommerceOrderEvent" ("id" TEXT NOT NULL,"orderId" TEXT NOT NULL,"actorUserId" TEXT NOT NULL,"fromStatus" "CommerceOrderStatus","toStatus" "CommerceOrderStatus" NOT NULL,"reason" TEXT,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "CommerceOrderEvent_pkey" PRIMARY KEY ("id"));
+CREATE UNIQUE INDEX "CommerceOrder_workspaceId_orderNumber_key" ON "CommerceOrder"("workspaceId","orderNumber");
+CREATE UNIQUE INDEX "CommerceOrder_connectorId_externalOrderId_key" ON "CommerceOrder"("connectorId","externalOrderId");
+CREATE INDEX "CommerceOrder_workspaceId_status_createdAt_idx" ON "CommerceOrder"("workspaceId","status","createdAt");
+CREATE INDEX "CommerceOrderEvent_orderId_createdAt_idx" ON "CommerceOrderEvent"("orderId","createdAt");
+ALTER TABLE "CommerceOrder" ADD CONSTRAINT "CommerceOrder_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CommerceOrder" ADD CONSTRAINT "CommerceOrder_connectorId_fkey" FOREIGN KEY ("connectorId") REFERENCES "StoreConnector"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "CommerceOrderEvent" ADD CONSTRAINT "CommerceOrderEvent_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "CommerceOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CommerceOrder" ADD CONSTRAINT "CommerceOrder_totalMinor_nonnegative" CHECK ("totalMinor" >= 0);
