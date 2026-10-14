@@ -111,6 +111,9 @@ model Workspace {
   products    Product[]
   connectors  StoreConnector[]
   customFields ProductCustomFieldDefinition[]
+  warehouses Warehouse[]
+  stockBalances StockBalance[]
+  stockMovements StockMovement[]
 }
 
 model WorkspaceMember {
@@ -586,11 +589,61 @@ model Product {
   updatedAt       DateTime @updatedAt
   workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   customValues    ProductCustomFieldValue[]
+  stockBalances StockBalance[]
+  stockMovements StockMovement[]
   barcodes        BarcodeRecord[]
   marketplaceListings MarketplaceListing[]
   @@unique([workspaceId, internalSku])
   @@unique([workspaceId, internalBarcode])
   @@index([workspaceId, updatedAt])
+}
+
+
+model Warehouse {
+  id String @id @default(cuid())
+  workspaceId String
+  name String
+  code String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  balances StockBalance[]
+  movements StockMovement[]
+  @@unique([workspaceId, code])
+  @@index([workspaceId, name])
+}
+
+model StockBalance {
+  id String @id @default(cuid())
+  workspaceId String
+  warehouseId String
+  productId String
+  quantity Int @default(0)
+  updatedAt DateTime @updatedAt
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  @@unique([warehouseId, productId])
+  @@index([workspaceId, productId])
+}
+
+model StockMovement {
+  id String @id @default(cuid())
+  workspaceId String
+  warehouseId String
+  productId String
+  quantityDelta Int
+  quantityAfter Int
+  reason String
+  idempotencyKey String
+  actorUserId String
+  createdAt DateTime @default(now())
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  @@unique([workspaceId, idempotencyKey])
+  @@index([workspaceId, createdAt])
+  @@index([warehouseId, productId, createdAt])
 }
 
 model ProductCustomFieldDefinition {
