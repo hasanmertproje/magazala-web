@@ -68,4 +68,29 @@ fi
 
 curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/auth/me" | grep -F "$EMAIL" >/dev/null
 
-echo "Runtime smoke passed: live, ready, setup, session, logout and login."
+# Subscription presets are admin-only, database-backed and idempotent.
+curl -fsS -b "$COOKIE_JAR" -H "Origin: $BASE_URL" \
+  -H 'Content-Type: application/json' -X POST \
+  "$BASE_URL/api/admin/packages/presets" | grep -F '"slug":"baslangic"' >/dev/null
+
+curl -fsS -b "$COOKIE_JAR" "$BASE_URL/billing" | grep -F 'Paketim ve Kredilerim' >/dev/null
+
+# Product operations must not be accessible without authentication.
+unauthenticated_status=$(curl -sS -o /dev/null -w '%{http_code}' \
+  -H "Origin: $BASE_URL" -H 'Content-Type: application/json' \
+  --data '{"name":"Unauthorized Product"}' "$BASE_URL/api/commerce/products")
+if [[ "$unauthenticated_status" != "401" ]]; then
+  echo "Expected product endpoint HTTP 401 without session, got $unauthenticated_status" >&2
+  exit 1
+fi
+
+# Persist a draft product in the CI PostgreSQL service using the admin session.
+curl -fsS -b "$COOKIE_JAR" -H "Origin: $BASE_URL" \
+  -H 'Content-Type: application/json' \
+  --data '{"name":"CI Catalog Product","internalSku":"CI-RUNTIME-001","currency":"TRY","price":"149.90"}' \
+  "$BASE_URL/api/commerce/products" | grep -F '"ok":true' >/dev/null
+
+curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/commerce/products" | grep -F 'CI Catalog Product' >/dev/null
+curl -fsS -b "$COOKIE_JAR" "$BASE_URL/dashboard" | grep -F 'Genel Bakış' >/dev/null
+
+echo "Runtime smoke passed: auth, packages, subscription UI, product CRUD creation, access restrictions and dashboard."
