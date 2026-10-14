@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Mağazala',
+  title: 'EntegrePilot',
   description: 'E-ticaret operasyon, ürün araştırma ve yaratıcı üretim platformu.',
 };
 
