@@ -36,12 +36,12 @@ export default function RecoverPage() {
 
   return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:24}}>
     <section className="card" style={{width:'min(520px,100%)'}}>
-      <div className="brand" style={{marginBottom:24}}>Magazala</div>
+      <div className="brand" style={{marginBottom:24}}>EntegrePilot</div>
       <h1 className="page-title">Yönetici hesabı kurtarma</h1>
       {done ? <><p role="status">Parola güncellendi. Eski oturumlar iptal edildi.</p><Link href="/login" className="action primary">Giriş yap</Link></> :
       <>
         <p className="page-subtitle">Bu ekran yalnızca süreli yönetici kurtarma anahtarı etkinleştirildiğinde kullanılabilir. Mevcut verileri silmez.</p>
-        {error && <p role="alert" style={{color:'#ff9b9b'}}>{error === 'RECOVERY_NOT_AUTHORIZED' ? 'Anahtar geçersiz, süresi dolmuş ya da yönetici e-postası eşleşmiyor.' : error === 'RECOVERY_TOKEN_USED' ? 'Bu anahtar daha önce kullanılmış.' : 'Kurtarma işlemi tamamlanamadı.'}</p>}
+        {error && <p role="alert" style={{color:'var(--danger)'}}>{error === 'RECOVERY_NOT_AUTHORIZED' ? 'Anahtar geçersiz, süresi dolmuş ya da yönetici e-postası eşleşmiyor.' : error === 'RECOVERY_TOKEN_USED' ? 'Bu anahtar daha önce kullanılmış.' : 'Kurtarma işlemi tamamlanamadı.'}</p>}
         <form onSubmit={submit} style={{display:'grid',gap:12,marginTop:22}}>
           <label>Yönetici e-postası (birden fazla süper yönetici varsa zorunlu)<input className="input" name="email" type="email" autoComplete="email" /></label>
           <label>Tek kullanımlık kurtarma anahtarı<input className="input" name="token" type="password" required minLength={32} autoComplete="off" /></label>
