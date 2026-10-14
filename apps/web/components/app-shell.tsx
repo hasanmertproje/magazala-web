@@ -51,9 +51,11 @@ export function AppShell({
   useEffect(() => { setMobileMenuOpen(false); }, [pathname]);
   useEffect(() => {
     if (!mobileMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setMobileMenuOpen(false); };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => { window.removeEventListener('keydown', onKeyDown); document.body.style.overflow = previousOverflow; };
   }, [mobileMenuOpen]);
   const sectionLabel = sectionsLabel(pathname);
   const sections = isSuperAdmin ? [...userSections, ...adminSections] : userSections;
