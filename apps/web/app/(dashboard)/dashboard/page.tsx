@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   const workspaceId = auth.workspace?.id;
   const days = calendarDays(new Date(), 14);
   const since = days[0].date;
-  const [stores, products, drafts, publishedListings, assets, notifications, recentProducts, connectors] = await Promise.all([
+  const [stores, products, drafts, publishedListings, assets, notifications, recentProducts, connectors, orders, openOrders, stockBalances, recentOrders] = await Promise.all([
     workspaceId ? db.storeConnector.count({ where: { workspaceId } }) : 0,
     workspaceId ? db.product.count({ where: { workspaceId } }) : 0,
     workspaceId ? db.product.count({ where: { workspaceId, status: 'DRAFT' } }) : 0,
@@ -26,6 +26,10 @@ export default async function DashboardPage() {
     workspaceId ? db.product.findMany({ where: { workspaceId, createdAt: { gte: since } }, select: { createdAt: true }, take: 10000 }) : [],
     workspaceId ? db.storeConnector.findMany({ where: { workspaceId }, orderBy: { updatedAt: 'desc' }, take: 5,
       select: { id: true, name: true, provider: true, mode: true, enabled: true, lastSyncAt: true, lastErrorCode: true } }) : [],
+    workspaceId ? db.commerceOrder.count({where:{workspaceId}}) : 0,
+    workspaceId ? db.commerceOrder.count({where:{workspaceId,status:{in:['NEW','CONFIRMED','PACKING']}}}) : 0,
+    workspaceId ? db.stockBalance.aggregate({where:{workspaceId},_sum:{quantity:true},_count:{id:true}}) : null,
+    workspaceId ? db.commerceOrder.findMany({where:{workspaceId},take:6,orderBy:{createdAt:'desc'},select:{id:true,orderNumber:true,status:true,source:true,createdAt:true,totalMinor:true,currency:true}}) : [],
   ]);
   const counts = new Map(days.map(day => [day.key, 0]));
   for (const product of recentProducts) {
@@ -36,8 +40,8 @@ export default async function DashboardPage() {
   const metrics = [
     { title: 'Tanımlı mağazalar', value: stores, href: '/commerce/stores', note: 'Mağaza bağlantıları' },
     { title: 'Ürün kayıtları', value: products, href: '/commerce/products', note: 'Merkezi ürün kataloğu' },
-    { title: 'Taslak ürünler', value: drafts, href: '/commerce/products', note: 'Hazırlık aşamasındaki ürünler' },
-    { title: 'Senkronize listelemeler', value: publishedListings, href: '/commerce/stores', note: 'Doğrulanmış eşlemeler' },
+    { title: 'Sipariş kayıtları', value: orders, href: '/commerce/orders', note: openOrders+' işlem bekliyor' },
+    { title: 'Toplam stok', value: stockBalances?._sum.quantity ?? 0, href: '/commerce/inventory', note: (stockBalances?._count.id ?? 0)+' stok kalemi' },
   ];
   return <div className="content dashboard-home">
     <div className="dashboard-heading">
@@ -47,13 +51,13 @@ export default async function DashboardPage() {
     </div>
     <section className="dashboard-hero">
       <div><span className="dashboard-hero-eyebrow">ENTEGREPILOT / TİCARET OPERASYONLARI</span>
-        <h2>Mağazalarınızın kontrolü tek yerde.</h2>
-        <p>Ürün kataloğunu, bağlantı durumlarını ve mağaza operasyonlarını aynı panelden takip edin. Yardımcı araçlara Eklentiler bölümünden erişebilirsiniz.</p>
-        <div className="dashboard-hero-actions"><Link href="/commerce/products" className="action primary">Ürün kataloğu</Link><Link href="/commerce/stores" className="action">Bağlantılar</Link></div>
+        <h2>Operasyonlarınızın tamamı tek panelde.</h2>
+        <p>Mağazalar, siparişler, ürünler ve depo kayıtları tek çalışma alanında. Görsel stüdyosu ve ürün araştırması Eklentiler bölümünde.</p>
+        <div className="dashboard-hero-actions"><Link href="/commerce/orders" className="action primary">Siparişleri yönet</Link><Link href="/commerce/products" className="action">Ürün kataloğu</Link><Link href="/commerce/stores" className="action">Mağazalar</Link></div>
       </div>
       <div className="dashboard-hero-summary" aria-label="Platform veri özeti">
-        <span>ÇALIŞMA ALANI ÖZETİ</span><strong>{products.toLocaleString('tr-TR')}</strong><small>toplam ürün kaydı</small>
-        <div className="dashboard-hero-detail"><span>{stores} mağaza</span><span>{assets} dosya</span><span>{notifications} bildirim</span></div>
+        <span>OPERASYON ÖZETİ</span><strong>{openOrders.toLocaleString('tr-TR')}</strong><small>işlem bekleyen sipariş</small>
+        <div className="dashboard-hero-detail"><span>{stores} mağaza</span><span>{products} ürün</span><span>{assets} dosya</span><span>{notifications} bildirim</span></div>
       </div>
     </section>
     <section className="dashboard-stat-grid" aria-label="Mağaza göstergeleri">
@@ -84,10 +88,22 @@ export default async function DashboardPage() {
           : <div className="dashboard-no-stores"><strong>Bağlı mağaza bulunmuyor</strong><p>Bağlantı işlemleri doğrulanmadan canlı veri görüntülenmez.</p><Link href="/commerce/stores" className="action">Bağlantıları görüntüle</Link></div>}
       </section>
     </div>
+    <section className="card dashboard-orders-card" aria-label="Son siparişler">
+      <div className="dashboard-section-heading"><div><h2>Son siparişler</h2><p>Çalışma alanınızdaki en yeni 6 kayıt</p></div><Link href="/commerce/orders">Siparişlere git →</Link></div>
+      {recentOrders.length ? <div className="store-table-wrap"><table className="store-table">
+        <thead><tr><th>Sipariş no</th><th>Kaynak</th><th>Durum</th><th>Tutar</th><th>Tarih</th></tr></thead>
+        <tbody>{recentOrders.map(order=><tr key={order.id}>
+          <td><strong>{order.orderNumber}</strong></td><td>{order.source === 'MANUAL' ? 'Manuel' : order.source}</td>
+          <td><span className={order.status === 'DELIVERED' ? 'badge active' : 'badge'}>{({NEW:'Yeni',CONFIRMED:'Onaylandı',PACKING:'Hazırlanıyor',SHIPPED:'Kargolandı',DELIVERED:'Teslim edildi',CANCELLED:'İptal'} as Record<string,string>)[order.status] ?? order.status}</span></td>
+          <td>{(order.totalMinor/100).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})} {order.currency}</td>
+          <td>{order.createdAt.toLocaleDateString('tr-TR')}</td>
+        </tr>)}</tbody></table></div> : <div className="dashboard-empty-state"><strong>Henüz sipariş kaydı yok</strong><p>Manuel siparişler ve ileride doğrulanacak pazaryeri siparişleri burada görünecek.</p><Link href="/commerce/orders" className="action">Sipariş ekranını aç</Link></div>}
+    </section>
     <div className="dashboard-section-heading"><div><h2>Yönetim araçları</h2><p>Öncelikli ticaret modülleri ve ek araçlar</p></div><Link href="/billing">Paket ve kredilerim →</Link></div>
     <section className="dashboard-module-grid" aria-label="Platform modülleri">{[
       {title:'Mağaza Entegrasyonları',description:'Bağlantıları ve eşlemeleri takip edin.',href:'/commerce/stores',tag:'ANA MODÜL'},
-      {title:'Ürün ve Stok',description:'Ürün kayıtları, barkod ve stok hazırlığı.',href:'/commerce/products',tag:'ANA MODÜL'},
+      {title:'Sipariş Yönetimi',description:'Siparişleri, durumları ve işlem geçmişini yönetin.',href:'/commerce/orders',tag:'OPERASYON'},
+      {title:'Ürün ve Stok',description:'Ürün kataloğu, barkod ve depo stok kayıtları.',href:'/commerce/inventory',tag:'ANA MODÜL'},
       {title:'Veri Yönetimi',description:'İçe/dışa aktarma araçlarına erişin.',href:'/commerce/import-export',tag:'OPERASYON'},
       {title:'Eklentiler',description:'Görsel stüdyosu ve ürün araştırması.',href:'/create/design-studio',tag:'YARDIMCI ARAÇ'},
     ].map(module => <Link className="card dashboard-module" href={module.href} key={module.href}><span className="dashboard-module-tag">{module.tag}</span><h3>{module.title}</h3><p>{module.description}</p><span className="dashboard-module-action">Modülü aç →</span></Link>)}</section>
