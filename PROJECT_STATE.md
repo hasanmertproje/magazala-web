@@ -77,3 +77,24 @@ Review new PR CI results, resolve any regressions, then add dedicated authorizat
 - Keep technical/internal package and schema IDs untouched to avoid destructive changes.
 - PoyrazHosting Reseller P1 has not been verified as compatible with long-running Next.js + Prisma/PostgreSQL. Prefer Railway application + DB + S3 with custom domain DNS under tasarlayalim.com. See docs/ENTEGREPILOT_CPANEL_DEPLOYMENT.md.
 - Blockers for live custom-domain cutover: authoritative DNS access and Railway custom domain records/SSL verification. No DNS change, environment secret rotation, or DB migration to cPanel performed in this PR.
+
+
+## Commerce-first SaaS overhaul (2026-10-14, feature branch)
+- Visual direction: actual responsive Tabler-inspired operations console (original CSS/JSX, not a screenshot).
+- Core IA: commerce/store management primary; visual generation and product research under Add-ons.
+- Dashboard: tenant-scoped store, product, draft, listing and file counts; actual 14-day product-creation chart, store status, and no synthetic order/sales metrics.
+- Store overview: DB-backed connector rows, environment labels, errors and linkage counts; Preview connectors not represented as live Trendyol integrations.
+- Product catalog: authenticated tenant-scoped product GET/POST with entitlement enforcement, Zod validation and audit trail, plus operational UI.
+- Three monthly tiers: Başlangıç 20 image credits; Gelişim 100 image and 30 research; Kurumsal 500 image and 150 research. Non-destructive Prisma migration provisions packages; super-admins may assign package per workspace and set per-feature overrides. Existing UsageQuota enforces monthly UTC quota per feature. Pricing and payment capture are **not implemented**; no subscriptions are charged.
+- Package overview page: assigned package + actual quota utilization.
+- CI smoke tests expanded to cover package presets, authorization and product persistence.
+
+### Not yet implemented or verified
+1. Order lifecycle, fulfillment, returns/refunds, invoicing, stock reservations, warehouse movements.
+2. Real Trendyol and other marketplace OAuth/API credentials, product/order/stock sync, webhook signatures, scheduling, idempotency, retries, rate limits, reconciliation and conflict resolution.
+3. Production payment subscription billing, invoices, customer checkout, renewal, cancellation, proration and payment webhooks.
+4. Credit wallet transaction ledger or billing settlement beyond monthly per-feature UsageQuota; monthly plan limits should not be described as prepaid currency.
+5. Responsive browser-based visual regression, keyboard/a11y audit, load test, end-to-end tenancy and object storage verification.
+6. Global security hardening, CSRF/SSRF/rate-limiting boundary review, subdomain migration and secret expiry policy.
+
+Keep unavailable features marked Preview; never publish fake revenue, order counts or connected stores. Do not claim SaaS release readiness before these gates pass.
