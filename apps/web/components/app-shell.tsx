@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 
 const userSections = [
   ['Genel', [['Kontrol Paneli','/dashboard']]],
-  ['Mağaza Yönetimi', [['Mağazalar ve Entegrasyonlar','/commerce/stores'],['Ürün Kataloğu','/commerce/products'],['Stok ve Depo','/commerce/inventory'],['Barkod ve SKU','/commerce/barcodes'],['Veri Aktarımı','/commerce/import-export']]],
+  ['Mağaza Yönetimi', [['Mağazalar ve Entegrasyonlar','/commerce/stores'],['Siparişler','/commerce/orders'],['Ürün Kataloğu','/commerce/products'],['Stok ve Depo','/commerce/inventory'],['Barkod ve SKU','/commerce/barcodes'],['Veri Aktarımı','/commerce/import-export']]],
   ['Operasyon', [['İş Akışları','/automation/workflows'],['Projeler','/workspace/projects'],['Dosyalar','/workspace/assets']]],
   ['Eklentiler', [['Görsel Stüdyosu','/create/design-studio'],['Ürün Araştırması','/create/product-intelligence']]],
   ['Hesap ve Destek', [['Bildirimler','/notifications'],['Paketim ve Kredilerim','/billing'],['Yardım','/help/info']]],
