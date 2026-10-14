@@ -181,3 +181,31 @@ html,body{background:var(--bg);color:var(--text)}
 .store-table th{color:var(--muted);font-weight:750;white-space:nowrap}
 @media(max-width:850px){.inventory-grid{grid-template-columns:1fr}}
 @media(max-width:500px){.inventory-form .action{width:100%}.inventory-warehouse-row{flex-wrap:wrap}}
+
+
+/* Commerce operations dashboard: responsive data-dense modules, not placeholder artwork. */
+.dashboard-orders-card{margin-top:22px}
+.dashboard-orders-card .dashboard-section-heading{margin:0 0 16px}
+.dashboard-empty-state{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:28px 14px;border:1px dashed var(--line-strong);border-radius:12px;background:var(--panel2)}
+.dashboard-empty-state strong{font-size:14px;color:var(--text)}
+.dashboard-empty-state p{margin:0;color:var(--muted);font-size:12px;line-height:1.65}
+.dashboard-orders-card .store-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.dashboard-stat:focus-visible,.dashboard-module:focus-visible,.nav-link:focus-visible{outline:3px solid #85a8ed;outline-offset:2px}
+@media(max-width:720px){
+ .dashboard-home .dashboard-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .dashboard-home .dashboard-stat{min-height:122px;padding:15px;gap:8px}
+ .dashboard-home .dashboard-stat strong{font-size:27px}
+ .dashboard-home .dashboard-stat small{font-size:10px}
+ .dashboard-heading{align-items:stretch}
+ .dashboard-section-heading{flex-wrap:wrap}
+ .dashboard-orders-card{padding:16px}
+ .dashboard-hero-actions .action{flex:1 1 auto;justify-content:center}
+}
+@media(max-width:390px){
+ .dashboard-home .dashboard-stat-grid{grid-template-columns:1fr}
+ .dashboard-home .dashboard-stat{min-height:96px}
+ .dashboard-hero-actions{display:grid;grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+ .dashboard-stat,.dashboard-module,.dashboard-bar{transition:none}
+}
