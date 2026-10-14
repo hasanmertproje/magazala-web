@@ -148,3 +148,12 @@ html,body{background:var(--bg);color:var(--text)}
 .store-table td{padding:12px;border-bottom:1px solid #e8edf4;color:#41526c}
 @media(max-width:1120px){.dashboard-analytics-grid{grid-template-columns:1fr}}
 @media(max-width:720px){.dashboard-hero{grid-template-columns:1fr;padding:20px}.dashboard-hero-summary{padding:15px}.dashboard-analytics-card,.dashboard-connectors-card{min-height:auto}.dashboard-bar-chart{gap:5px}}
+
+
+/* Tenant product maintenance */
+.commerce-product-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:14px}
+.commerce-product-form label{display:grid;gap:6px;font-size:12px;font-weight:650;color:#56657b;min-width:0}
+.commerce-product-form .commerce-product-description{grid-column:span 2}
+.commerce-product-form>button{min-height:44px}
+@media(max-width:1080px){.commerce-product-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.commerce-product-form{grid-template-columns:1fr}.commerce-product-form .commerce-product-description{grid-column:span 1}}
