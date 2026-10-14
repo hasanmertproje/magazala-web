@@ -50,6 +50,8 @@ jobs:
       - run: npx prisma validate --schema=prisma/schema.prisma
       - name: Apply migrations on clean PostgreSQL
         run: npm run prisma:migrate:deploy
+      - name: Stock database integrity regression
+        run: node scripts/stock-integrity-check.mjs
       - name: Production configuration preflight
         run: npm run preflight:production
       - run: npm run check
