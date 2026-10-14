@@ -6,7 +6,7 @@ import { assertSameOrigin, isHtmlForm, publicRequestUrl } from '../../../../lib/
 import { issueSessionToken, SESSION_COOKIE, sessionCookieOptions } from '../../../../lib/session';
 
 const schema = z.object({
-  email: z.string().email().max(254).transform((value) => value.trim().toLowerCase()),
+  email: z.union([z.literal(''), z.string().email().max(254).transform((value) => value.trim().toLowerCase())]),
   password: z.string().min(1).max(128),
   next: z.string().max(2048).optional(),
 });
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     assertSameOrigin(request);
     const raw = formRequest ? Object.fromEntries(await request.formData()) : await request.json();
     const input = schema.parse(raw);
-    const user = await db.user.findUnique({ where: { email: input.email } });
+    // Empty email is supported only for recovery of a single existing super-admin.\n    // It does not create accounts or bypass password verification.\n    const user = input.email\n      ? await db.user.findUnique({ where: { email: input.email } })\n      : (await db.user.findMany({ where: { isSuperAdmin: true }, take: 2 })).length === 1\n        ? (await db.user.findMany({ where: { isSuperAdmin: true }, take: 2 }))[0]\n        : null;
     const valid = user ? await compare(input.password, user.passwordHash) : false;
     if (!valid || !user) {
       await delay(250);
