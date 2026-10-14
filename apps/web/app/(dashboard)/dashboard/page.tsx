@@ -46,7 +46,7 @@ export default async function DashboardPage() {
       <Link className="action primary" href="/commerce/stores">Mağazaları yönet <span aria-hidden="true">↗</span></Link>
     </div>
     <section className="dashboard-hero">
-      <div><span className="dashboard-hero-eyebrow">ENTE G REPILOT / TİCARET OPERASYONLARI</span>
+      <div><span className="dashboard-hero-eyebrow">ENTEGREPILOT / TİCARET OPERASYONLARI</span>
         <h2>Mağazalarınızın kontrolü tek yerde.</h2>
         <p>Ürün kataloğunu, bağlantı durumlarını ve mağaza operasyonlarını aynı panelden takip edin. Yardımcı araçlara Eklentiler bölümünden erişebilirsiniz.</p>
         <div className="dashboard-hero-actions"><Link href="/commerce/products" className="action primary">Ürün kataloğu</Link><Link href="/commerce/stores" className="action">Bağlantılar</Link></div>
