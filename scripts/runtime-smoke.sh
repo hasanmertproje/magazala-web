@@ -93,6 +93,18 @@ curl -fsS -b "$COOKIE_JAR" -H "Origin: $BASE_URL" \
 curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/commerce/products" | grep -F 'CI Catalog Product' >/dev/null
 curl -fsS -b "$COOKIE_JAR" "$BASE_URL/dashboard" | grep -F 'Genel Bakış' >/dev/null
 
+# Stage-mode marketplace connector setup stores secrets encrypted without attempting an external API call.
+curl -fsS -b "$COOKIE_JAR" -H "Origin: $BASE_URL" \
+  -H 'Content-Type: application/json' \
+  --data '{"name":"CI Trendyol Stage","sellerId":"1234567","apiKey":"CI_FAKE_KEY_DO_NOT_USE","apiSecret":"CI_FAKE_SECRET_DO_NOT_USE","mode":"STAGE"}' \
+  "$BASE_URL/api/commerce/stores" | grep -F '"ok":true' >/dev/null
+
+# The dashboard must not expose marketplace API keys or secrets.
+if curl -fsS -b "$COOKIE_JAR" "$BASE_URL/commerce/stores" | grep -F 'CI_FAKE_SECRET_DO_NOT_USE' >/dev/null; then
+  echo "Marketplace credentials leaked into store management HTML" >&2
+  exit 1
+fi
+
 # Distributed throttle: reject password guessing after the defined limit.
 for attempt in $(seq 1 10); do
   code=$(curl -sS -o /dev/null -w '%{http_code}' -H "Origin: $BASE_URL" \
