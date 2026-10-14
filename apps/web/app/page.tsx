@@ -8,7 +8,7 @@ export default async function Home() {
   const auth = await getAuthContext();
 
   if (auth) {
-    redirect('/create/design-studio');
+    redirect('/dashboard');
   }
 
   const userCount = await db.user.count();
