@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireSuperAdminApi } from '../../../../../lib/auth';
 import { db } from '../../../../../lib/db';
-import { assertSameOrigin } from '../../../../../lib/request-security';
+import { assertSameOrigin, isHtmlForm, publicRequestUrl } from '../../../../../lib/request-security';
 
 const PLAN_MATRIX = [
   { slug: 'baslangic', name: 'Başlangıç', imageCredits: 20, researchCredits: 0, enabled: ['commerce.products','commerce.barcode','commerce.import_export','ai.design.generate'] },
@@ -40,8 +40,11 @@ export async function POST(request: Request) {
       await tx.auditLog.create({ data: { actorUserId: auth.context.user.id, action: 'packages.presets.sync', entityType: 'Package', entityId: installed[0].id, metadata: { packages: installed } } });
       return installed;
     }, { isolationLevel: 'Serializable', timeout: 30000 });
+    if (isHtmlForm(request)) return NextResponse.redirect(publicRequestUrl('/admin/packages?notice=presets-synced', request), 303);
     return NextResponse.json({ ok: true, packages: result }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ ok: false, code: error instanceof Error ? error.message : 'PLAN_SYNC_FAILED' }, { status: 400 });
+    const code = error instanceof Error ? error.message : 'PLAN_SYNC_FAILED';
+    if (isHtmlForm(request)) return NextResponse.redirect(publicRequestUrl(`/admin/packages?error=${encodeURIComponent(code)}`, request), 303);
+    return NextResponse.json({ ok: false, code }, { status: 400 });
   }
 }
