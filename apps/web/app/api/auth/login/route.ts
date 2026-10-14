@@ -6,7 +6,7 @@ import { assertSameOrigin, isHtmlForm, publicRequestUrl } from '../../../../lib/
 import { issueSessionToken, SESSION_COOKIE, sessionCookieOptions } from '../../../../lib/session';
 
 const schema = z.object({
-  email: z.string().email().max(254).transform((value) => value.trim().toLowerCase()),
+  email: z.union([z.literal(''), z.string().email().max(254).transform((value) => value.trim().toLowerCase())]),
   password: z.string().min(1).max(128),
   next: z.string().max(2048).optional(),
 });
@@ -24,7 +24,12 @@ export async function POST(request: Request) {
     assertSameOrigin(request);
     const raw = formRequest ? Object.fromEntries(await request.formData()) : await request.json();
     const input = schema.parse(raw);
-    const user = await db.user.findUnique({ where: { email: input.email } });
+    // Allow password-only login exclusively when exactly one super-admin exists.
+    // A correct password is still required; all other users must supply an email.
+    const adminCandidates = input.email ? [] : await db.user.findMany({ where: { isSuperAdmin: true }, take: 2 });
+    const user = input.email
+      ? await db.user.findUnique({ where: { email: input.email } })
+      : adminCandidates.length === 1 ? adminCandidates[0] : null;
     const valid = user ? await compare(input.password, user.passwordHash) : false;
     if (!valid || !user) {
       await delay(250);
