@@ -237,3 +237,9 @@ html,body{background:var(--bg);color:var(--text)}
 .dashboard-flow-step small{font-size:11px;color:#3157b7}
 @media(max-width:850px){.dashboard-flow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.dashboard-flow-card{padding:14px}.dashboard-flow-grid{gap:8px}.dashboard-flow-step{padding:12px}}
+
+
+/* A cross-panel action is distinct from the links belonging to this panel. */
+.panel-switch-link{display:inline-flex;align-items:center;min-height:44px;margin-top:12px;padding:9px 11px;border:1px solid var(--line-strong);border-radius:9px;color:var(--accent-strong);font-size:12px;font-weight:700;text-decoration:none}
+.panel-switch-link:hover{background:var(--panel2);border-color:var(--accent)}
+.panel-switch-link:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
