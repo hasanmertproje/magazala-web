@@ -70,26 +70,50 @@ export default async function DashboardPage() {
     { title: 'Stok bakiyesi', value: stockBalances?._sum.quantity ?? 0, href: '/commerce/inventory', note: (stockBalances?._count.id ?? 0)+' stok kalemi', icon: 'stock' as const },
     { title: 'Mağazalar', value: stores, href: '/commerce/stores', note: failedConnections+' bağlantı hatası', icon: 'stores' as const },
   ];
-  return <div className="content dashboard-home commerce-mobile">
+  return <div className="content dashboard-home dashboard-v3 commerce-mobile">
+    <DashboardRefresh />
     <div className="dashboard-heading">
-      <div><span className="dashboard-eyebrow">MAĞAZA OPERASYON MERKEZİ</span><h1 className="page-title">Genel Bakış</h1>
-        <p className="page-subtitle">{auth.workspace?.name ?? 'Çalışma Alanı'} · Mağazalarınızın ve ürün verilerinizin güncel durumu</p></div>
-      <Link className="action primary" href="/commerce/stores">Mağazaları yönet <span aria-hidden="true">↗</span></Link>
+      <div><span className="dashboard-eyebrow">ENTEGREPILOT / OPERASYON MASASI</span><h1 className="page-title">Genel Bakış</h1>
+        <p className="page-subtitle">{auth.workspace?.name ?? 'Çalışma Alanı'} · Türkiye saati (UTC+3) · Gerçek çalışma alanı verileri</p></div>
+      <Link className="action primary" href="/commerce/orders"><DashboardIcon name="orders" size={16}/> Siparişleri aç <span aria-hidden="true">↗</span></Link>
     </div>
-    <section className="dashboard-hero">
-      <div><span className="dashboard-hero-eyebrow">ENTEGREPILOT / TİCARET OPERASYONLARI</span>
-        <h2>Sipariş ve stok işlemleri tek bakışta.</h2>
-        <p>Çalışma alanınıza ait sipariş aşamalarını, depo bakiyelerini ve mağaza bağlantılarını gerçek kayıtlardan takip edin.</p>
-        <div className="dashboard-hero-actions"><Link href="/commerce/orders" className="action primary">Siparişleri yönet</Link><Link href="/commerce/products" className="action">Ürün kataloğu</Link><Link href="/commerce/stores" className="action">Mağazalar</Link></div>
+    <section className="v3-operations" aria-label="Operasyon öncelikleri">
+      <div className="v3-command">
+        <div className="v3-command-kicker"><DashboardIcon name="activity" size={18}/> CANLI VERİ ÖZETİ <span>60 saniyede bir yenilenir</span></div>
+        <h2>{openOrders ? openOrders.toLocaleString('tr-TR') + ' sipariş işlem bekliyor' : 'Bekleyen sipariş bulunmuyor'}</h2>
+        <p>{openOrders ? 'Sipariş akışındaki bekleyen kayıtları öncelik sırasıyla yönetin.' : 'Yeni sipariş oluştuğunda iş akışında gösterilir.'}</p>
+        <div className="v3-command-actions">
+          <Link href="/commerce/orders" className="v3-command-primary">Sipariş ekranına git <DashboardIcon name="arrow" size={17}/></Link>
+          <Link href="/commerce/inventory" className="v3-command-secondary">Stokları incele <DashboardIcon name="arrow" size={16}/></Link>
+        </div>
+        <div className="v3-command-meta">
+          <span><DashboardIcon name="warehouse" size={15}/>{warehouses.toLocaleString('tr-TR')} depo</span>
+          <span><DashboardIcon name="stores" size={15}/>{stores.toLocaleString('tr-TR')} mağaza kaydı</span>
+          <span><DashboardIcon name="activity" size={15}/>{notifications.toLocaleString('tr-TR')} okunmamış bildirim</span>
+        </div>
       </div>
-      <div className="dashboard-hero-summary" aria-label="Platform veri özeti">
-        <span>OPERASYON ÖZETİ</span><strong>{openOrders.toLocaleString('tr-TR')}</strong><small>işlem bekleyen sipariş</small>
-        <div className="dashboard-hero-detail"><span>{stores} mağaza</span><span>{products} ürün</span><span>{assets} dosya</span><span>{notifications} bildirim</span></div>
-      </div>
+      <aside className="v3-priorities" aria-label="İşlem gerektiren kayıtlar">
+        <div className="v3-priorities-header"><span>ÖNCELİKLİ İŞLER</span><DashboardIcon name="clock" size={18}/></div>
+        <Link href="/commerce/orders" className="v3-priority">
+          <span className="v3-priority-icon"><DashboardIcon name="orders" size={19}/></span>
+          <span><strong>Bekleyen siparişler</strong><small>Yeni, onaylı ve hazırlanan kayıtlar</small></span>
+          <b>{openOrders.toLocaleString('tr-TR')}</b>
+        </Link>
+        <Link href="/commerce/inventory" className="v3-priority">
+          <span className="v3-priority-icon"><DashboardIcon name={lowStockBalances ? 'warning' : 'stock'} size={19}/></span>
+          <span><strong>Düşük stok kayıtları</strong><small>Beş adet veya altında bakiye</small></span>
+          <b>{lowStockBalances.toLocaleString('tr-TR')}</b>
+        </Link>
+        <Link href="/commerce/stores" className="v3-priority">
+          <span className="v3-priority-icon"><DashboardIcon name={failedConnections ? 'warning' : 'check'} size={19}/></span>
+          <span><strong>Bağlantı hataları</strong><small>Son hata bilgisi bulunan mağazalar</small></span>
+          <b>{failedConnections.toLocaleString('tr-TR')}</b>
+        </Link>
+      </aside>
     </section>
     <section className="dashboard-stat-grid" aria-label="Mağaza göstergeleri">
-      {metrics.map((item, index) => <Link className="dashboard-stat card" href={item.href} key={item.title}>
-        <div className="dashboard-stat-caption"><span>{item.title}</span><span className="dashboard-stat-index">{String(index + 1).padStart(2,'0')}</span></div>
+      {metrics.map((item) => <Link className="dashboard-stat card" href={item.href} key={item.title}>
+        <div className="dashboard-stat-caption"><span>{item.title}</span><span className="v3-metric-icon"><DashboardIcon name={item.icon} size={20}/></span></div>
         <strong>{item.value.toLocaleString('tr-TR')}</strong><small>{item.note} <span aria-hidden="true">↗</span></small>
       </Link>)}
     </section>
@@ -101,22 +125,23 @@ export default async function DashboardPage() {
     </section>
     <div className="dashboard-analytics-grid">
       <section className="card dashboard-analytics-card">
-        <div className="dashboard-section-heading"><div><h2>Ürün kayıt eğilimi</h2><p>Son 14 gün · {totalCreated.toLocaleString('tr-TR')} yeni ürün</p></div><span className="badge">14 Gün</span></div>
-        <div className="dashboard-bar-chart" role="img" aria-label={days.map(day=>`${day.label}: ${counts.get(day.key) ?? 0} ürün`).join(', ')}>
-          {days.map(day=><div className="dashboard-bar-column" key={day.key} title={`${day.label}: ${counts.get(day.key) ?? 0} ürün`}>
-            <span className="dashboard-bar" style={{height:`${Math.max(3, ((counts.get(day.key) ?? 0) / maxCount) * 100)}%`}} />
-            <small>{day.date.getUTCDate()}</small>
+        <div className="dashboard-section-heading"><div><h2>Sipariş hareketi</h2><p>Son 14 gün · Türkiye saati · {recentOrderTotal.toLocaleString('tr-TR')} kayıt</p></div>
+          <span className="v3-trend">{orderTrend === null ? 'Önceki dönem verisi yok' : (orderTrend > 0 ? '+' : '') + orderTrend + '% / önceki 7 gün'}</span></div>
+        <div className="dashboard-bar-chart" role="img" aria-label={days.map(day=>`${day.label}: ${dailyOrderMap.get(day.key) ?? 0} sipariş`).join(', ')}>
+          {days.map(day=><div className="dashboard-bar-column" key={day.key} title={`${day.label}: ${dailyOrderMap.get(day.key) ?? 0} sipariş`}>
+            <span className="dashboard-bar" style={{height:`${Math.max(3, ((dailyOrderMap.get(day.key) ?? 0) / maxCount) * 100)}%`}} />
+            <small>{Number(day.key.slice(-2))}</small>
           </div>)}
         </div>
-        <p className="dashboard-chart-caption">Günlük kayıtlar veritabanından eksiksiz sayılır. Pazaryeri satış verisi içermez.</p>
+        <p className="dashboard-chart-caption">{recentOrderTotal === 0 ? 'Bu dönemde sipariş kaydı bulunmuyor.' : 'Sütunlar kaydedilmiş siparişlerin oluşturulma tarihini gösterir.'} Son 14 günde ayrıca {totalCreated.toLocaleString('tr-TR')} ürün kaydedildi.</p>
       </section>
       <section className="card dashboard-connectors-card">
         <div className="dashboard-section-heading"><div><h2>Mağaza bağlantıları</h2><p>Güncel entegrasyon durumu</p></div><Link href="/commerce/stores">Tümünü gör →</Link></div>
         {connectors.length ? <div className="dashboard-connector-list">{connectors.map(c=>
           <div className="dashboard-connector-row" key={c.id}>
             <span className="dashboard-connector-icon" aria-hidden="true">{c.provider.slice(0,1).toUpperCase()}</span>
-            <div><strong>{c.name}</strong><small>{c.provider} · {c.mode==='PRODUCTION'?'Canlı API ortamı':'Test ortamı'}</small></div>
-            <span className={`badge ${c.enabled&&c.lastValidatedAt&&!c.lastErrorCode?'active':''}`}>{c.lastErrorCode?'Bağlantı hatası':!c.enabled?'Kayıt pasif':c.lastValidatedAt?'Kimlik doğrulandı':'Doğrulanmadı'}</span>
+            <div><strong>{c.name}</strong><small>{c.provider} · {c.mode === 'MOCK' ? 'Simülasyon' : c.mode === 'STAGE' ? 'Test ortamı' : 'Canlı ortam kaydı'}</small></div>
+            <span className={`badge ${c.mode !== 'MOCK' && c.enabled && c.lastValidatedAt && !c.lastErrorCode ? 'active' : ''}`}>{c.mode === 'MOCK' ? 'Simülasyon' : c.lastErrorCode ? 'Bağlantı hatası' : !c.enabled ? 'Kayıt pasif' : c.lastValidatedAt ? 'Kimlik doğrulandı' : 'Doğrulanmadı'}</span>
           </div>)}</div>
           : <div className="dashboard-no-stores"><strong>Bağlı mağaza bulunmuyor</strong><p>Bağlantı işlemleri doğrulanmadan canlı veri görüntülenmez.</p><Link href="/commerce/stores" className="action">Bağlantıları görüntüle</Link></div>}
       </section>
