@@ -18,7 +18,7 @@ export default async function StoresPage({ searchParams }: { searchParams: Promi
   }) : [];
   const metrics = [
     { title: 'Tanımlı mağazalar', value: connectors.length },
-    { title: 'Doğrulanan bağlantılar', value: connectors.filter(c => c.lastValidatedAt && !c.lastErrorCode).length },
+    { title: 'Doğrulanan bağlantılar', value: connectors.filter(c => c.enabled && c.lastValidatedAt && !c.lastErrorCode).length },
     { title: 'Ürün eşlemeleri', value: connectors.reduce((n,c) => n + c._count.listings,0) },
     { title: 'Bağlantı hataları', value: connectors.filter(c => c.lastErrorCode).length },
   ];
@@ -36,7 +36,7 @@ export default async function StoresPage({ searchParams }: { searchParams: Promi
         <thead><tr><th>Mağaza</th><th>Sağlayıcı</th><th>Ortam</th><th>Bağlantı</th><th>Son doğrulama</th><th>Eşlemeler</th><th>Son senkronizasyon</th><th>İşlem</th></tr></thead>
         <tbody>{connectors.map(c => <tr key={c.id}>
           <td><strong>{c.name}</strong></td><td>{c.provider}</td><td>{c.mode}</td>
-          <td>{c.lastErrorCode ? 'Hata: '+c.lastErrorCode : c.enabled ? 'Senkronizasyon açık' : 'Senkronizasyon kapalı'}</td>
+          <td>{c.lastErrorCode ? 'Bağlantı hatası: '+c.lastErrorCode : !c.enabled ? 'Kayıt pasif' : c.lastValidatedAt ? 'Kimlik doğrulandı (otomatik senkronizasyon yok)' : 'Doğrulanmadı'}</td>
           <td>{c.lastValidatedAt?.toLocaleString('tr-TR') ?? 'Doğrulanmadı'}</td>
           <td>{c._count.listings}</td><td>{c.lastSyncAt?.toLocaleString('tr-TR') ?? 'Henüz yok'}</td>
           <td>{canConfigure && c.provider === 'trendyol' ?
