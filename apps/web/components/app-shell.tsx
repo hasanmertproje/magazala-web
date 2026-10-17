@@ -4,18 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-
-const userSections = [
-  ['Genel', [['Kontrol Paneli','/dashboard']]],
-  ['Mağaza Yönetimi', [['Mağazalar ve Entegrasyonlar','/commerce/stores'],['Siparişler','/commerce/orders'],['Ürün Kataloğu','/commerce/products'],['Stok ve Depo','/commerce/inventory'],['Barkod ve SKU','/commerce/barcodes'],['Veri Aktarımı','/commerce/import-export']]],
-  ['Operasyon', [['İş Akışları','/automation/workflows'],['Projeler','/workspace/projects'],['Dosyalar','/workspace/assets']]],
-  ['Eklentiler', [['Görsel Stüdyosu','/create/design-studio'],['Ürün Araştırması','/create/product-intelligence']]],
-  ['Hesap ve Destek', [['Bildirimler','/notifications'],['Paketim ve Kredilerim','/billing'],['Yardım','/help/info']]],
-] as const;
-
-const adminSections = [
-  ['Yönetim', [['API Sağlayıcıları','/admin/providers'],['Modeller','/admin/models'],['Router','/admin/router'],['Kullanıcılar','/admin/users'],['Paketler','/admin/packages'],['Geliştirme Talepleri','/admin/requirements'],['Sistem','/admin/system']]],
-] as const;
+import { navigationForPanel } from '../lib/panel-navigation';
 
 type WorkspaceOption = { id: string; name: string };
 
@@ -25,7 +14,6 @@ function sectionsLabel(pathname: string): string {
   if (pathname.startsWith('/commerce/')) return 'Mağaza Yönetimi';
   if (pathname.startsWith('/workspace/')) return 'Çalışma Alanı';
   if (pathname.startsWith('/automation/')) return 'Operasyon';
-  if (pathname.startsWith('/admin/')) return 'Yönetim';
   return 'Genel';
 }
 
@@ -58,7 +46,7 @@ export function AppShell({
     return () => { window.removeEventListener('keydown', onKeyDown); document.body.style.overflow = previousOverflow; };
   }, [mobileMenuOpen]);
   const sectionLabel = sectionsLabel(pathname);
-  const sections = isSuperAdmin ? [...userSections, ...adminSections] : userSections;
+  const sections = navigationForPanel('workspace');
   return <div className="shell">
     {mobileMenuOpen && <button type="button" className="sidebar-backdrop" aria-label="Menüyü kapat" onClick={() => setMobileMenuOpen(false)} />}
 
@@ -67,7 +55,7 @@ export function AppShell({
       <nav className="nav"><div className="nav-overview">ÇALIŞMA ALANI</div>{sections.map(([title,items], sectionIndex) => <div key={title} className="nav-section">
         <div className="nav-title"><span>{String(sectionIndex + 1).padStart(2, "0")}</span>{title}</div>
         {items.map(([label,href]) => <Link key={label} href={href} aria-current={pathname === href ? "page" : undefined} className={pathname === href ? "nav-link is-current" : "nav-link"} onClick={() => setMobileMenuOpen(false)}><span className="nav-link-indicator" aria-hidden="true" />{label}{href==='/notifications'&&unreadNotifications>0?<span className="badge active" style={{marginLeft:7}}>{unreadNotifications}</span>:null}</Link>)}
-      </div>)}</nav><div className="sidebar-footer"><span className="workspace-status-dot" /> Platform erişilebilir <small>EntegrePilot Yönetim Paneli</small></div>
+      </div>)}</nav><div className="sidebar-footer"><span className="workspace-status-dot" /> Çalışma alanı <small>{workspaceName ?? "EntegrePilot"}</small>{isSuperAdmin ? <a className="panel-switch-link" href="/admin/workspaces">Yönetim konsoluna geç ↗</a> : null}</div>
     </aside>
     <main className="main">
       <header className="topbar">
