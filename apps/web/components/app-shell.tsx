@@ -47,7 +47,7 @@ export function AppShell({
   }, [mobileMenuOpen]);
   const sectionLabel = sectionsLabel(pathname);
   const sections = navigationForPanel('workspace');
-  return <div className="shell">
+  return <div className="shell" data-panel="workspace">
     {mobileMenuOpen && <button type="button" className="sidebar-backdrop" aria-label="Menüyü kapat" onClick={() => setMobileMenuOpen(false)} />}
 
     <aside className={`sidebar ${mobileMenuOpen ? "sidebar-open" : ""}`} id="main-navigation" aria-label="Ana menü">

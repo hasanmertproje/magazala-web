@@ -19,7 +19,7 @@ export function AdminShell({ children, displayName, unreadNotifications = 0 }: {
     return () => window.removeEventListener('keydown', handler);
   }, [mobileOpen]);
 
-  return <div className="shell">
+  return <div className="shell" data-panel="admin">
     {mobileOpen && <button type="button" className="sidebar-backdrop" aria-label="Yönetim menüsünü kapat" onClick={() => setMobileOpen(false)} />}
     <aside className={'sidebar' + (mobileOpen ? ' sidebar-open' : '')} id="admin-navigation" aria-label="Yönetici menüsü">
       <div className="sidebar-heading">
