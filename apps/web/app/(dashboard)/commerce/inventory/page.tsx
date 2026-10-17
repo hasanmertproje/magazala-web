@@ -9,14 +9,17 @@ export default async function InventoryPage({searchParams}:{searchParams:Promise
   const workspaceId=auth.workspace?.id;
   const params=await searchParams;
   const canManage=auth.user.isSuperAdmin||auth.membership?.role==='ADMIN';
-  const [warehouses,products,balances,movements]=await Promise.all([
+  const [warehouses,products,balances,movements,stockTotals,stockMovementCount]=await Promise.all([
     workspaceId?db.warehouse.findMany({where:{workspaceId},orderBy:{name:'asc'}}):[],
     workspaceId?db.product.findMany({where:{workspaceId},select:{id:true,name:true,internalSku:true},orderBy:{name:'asc'},take:500}):[],
     workspaceId?db.stockBalance.findMany({where:{workspaceId},include:{product:{select:{name:true,internalSku:true}},warehouse:{select:{name:true,code:true}}},orderBy:{updatedAt:'desc'},take:100}):[],
     workspaceId?db.stockMovement.findMany({where:{workspaceId},include:{product:{select:{name:true}},warehouse:{select:{name:true}}},orderBy:{createdAt:'desc'},take:15}):[],
+    workspaceId?db.stockBalance.aggregate({where:{workspaceId},_sum:{quantity:true},_count:{id:true}}):null,
+    workspaceId?db.stockMovement.count({where:{workspaceId}}):0,
   ]);
-  const total=balances.reduce((n,b)=>n+b.quantity,0);
-  return <div className="content">
+  const total=stockTotals?._sum.quantity ?? 0;
+  const balanceCount=stockTotals?._count.id ?? 0;
+  return <div className="content commerce-mobile">
     <div className="dashboard-heading">
       <div><span className="dashboard-eyebrow">TİCARET OPERASYONLARI / ENVANTER</span><h1 className="page-title">Stok ve Depo Yönetimi</h1><p className="page-subtitle">Depoların stok miktarları ve tüm manuel hareketleri kayıt altındadır. Pazaryerlerine stok gönderimi henüz etkin değildir.</p></div>
       <span className="badge beta">İÇ ENVANTER · BETA</span>
@@ -24,7 +27,7 @@ export default async function InventoryPage({searchParams}:{searchParams:Promise
     {params.notice?<p className="card" role="status">Stok veya depo işlemi kaydedildi.</p>:null}
     {params.error?<p className="card" role="alert" style={{color:'var(--danger)'}}>İşlem başarısız: {params.error}</p>:null}
     <section className="dashboard-stat-grid" aria-label="Stok özeti">
-      {[{title:'Depo sayısı',value:warehouses.length},{title:'Stok kalemi',value:balances.length},{title:'Toplam stok adedi',value:total},{title:'Stok hareketi',value:movements.length,note:'Son 15 hareket'}].map(x=><div className="card dashboard-stat" key={x.title}><span>{x.title}</span><strong>{x.value.toLocaleString('tr-TR')}</strong><small>{x.note??'Çalışma alanı verisi'}</small></div>)}
+      {[{title:'Depo sayısı',value:warehouses.length},{title:'Stok kalemi',value:balanceCount},{title:'Toplam stok adedi',value:total},{title:'Stok hareketi',value:stockMovementCount,note:'Toplam hareket kaydı'}].map(x=><div className="card dashboard-stat" key={x.title}><span>{x.title}</span><strong>{x.value.toLocaleString('tr-TR')}</strong><small>{x.note??'Çalışma alanı verisi'}</small></div>)}
     </section>
     <div className="inventory-grid">
       <section className="card"><h2>Depolar</h2>
@@ -43,11 +46,11 @@ export default async function InventoryPage({searchParams}:{searchParams:Promise
       </section>
     </div>
     <section className="card" style={{marginTop:20}}><h2>Stok bakiyeleri</h2><div className="store-table-wrap"><table className="store-table"><thead><tr><th>Ürün</th><th>SKU</th><th>Depo</th><th>Adet</th><th>Güncelleme</th></tr></thead><tbody>
-      {balances.map(b=><tr key={b.id}><td>{b.product.name}</td><td>{b.product.internalSku??'—'}</td><td>{b.warehouse.name} · {b.warehouse.code}</td><td><strong>{b.quantity}</strong></td><td>{b.updatedAt.toLocaleString('tr-TR')}</td></tr>)}
+      {balances.map(b=><tr key={b.id}><td data-label="Ürün">{b.product.name}</td><td data-label="SKU">{b.product.internalSku??'—'}</td><td data-label="Depo">{b.warehouse.name} · {b.warehouse.code}</td><td data-label="Adet"><strong>{b.quantity}</strong></td><td data-label="Güncelleme">{b.updatedAt.toLocaleString('tr-TR')}</td></tr>)}
       {!balances.length?<tr><td colSpan={5}>Henüz stok kaydı yok.</td></tr>:null}
     </tbody></table></div></section>
     <section className="card" style={{marginTop:20}}><h2>Son stok hareketleri</h2><div className="store-table-wrap"><table className="store-table"><thead><tr><th>Tarih</th><th>Ürün</th><th>Depo</th><th>Değişim</th><th>Son bakiye</th><th>Gerekçe</th></tr></thead><tbody>
-      {movements.map(m=><tr key={m.id}><td>{m.createdAt.toLocaleString('tr-TR')}</td><td>{m.product.name}</td><td>{m.warehouse.name}</td><td>{m.quantityDelta>0?'+':''}{m.quantityDelta}</td><td>{m.quantityAfter}</td><td>{m.reason}</td></tr>)}
+      {movements.map(m=><tr key={m.id}><td data-label="Tarih">{m.createdAt.toLocaleString('tr-TR')}</td><td data-label="Ürün">{m.product.name}</td><td data-label="Depo">{m.warehouse.name}</td><td data-label="Değişim">{m.quantityDelta>0?'+':''}{m.quantityDelta}</td><td data-label="Son bakiye">{m.quantityAfter}</td><td data-label="Gerekçe">{m.reason}</td></tr>)}
       {!movements.length?<tr><td colSpan={6}>Henüz hareket bulunmuyor.</td></tr>:null}
     </tbody></table></div></section>
   </div>;

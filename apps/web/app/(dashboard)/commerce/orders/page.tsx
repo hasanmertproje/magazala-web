@@ -17,7 +17,7 @@ export default async function OrdersPage({searchParams}:{searchParams:Promise<{n
    workspaceId?db.commerceOrder.count({where:{workspaceId}}):0,
    workspaceId?db.commerceOrder.count({where:{workspaceId,status:{in:['NEW','CONFIRMED','PACKING']}}}):0,
  ]);
- return <div className="content">
+ return <div className="content commerce-mobile">
   <div className="dashboard-heading">
     <div><span className="dashboard-eyebrow">TİCARET OPERASYONLARI / SİPARİŞLER</span><h1 className="page-title">Sipariş Yönetimi</h1><p className="page-subtitle">Sipariş kayıtları, durum geçişleri ve denetlenebilir işlem geçmişi. Trendyol sipariş senkronizasyonu henüz bağlı değildir.</p></div>
     <span className="badge beta">İÇ OPERASYON · BETA</span>
@@ -46,11 +46,11 @@ export default async function OrdersPage({searchParams}:{searchParams:Promise<{n
    </form>
    <div className="store-table-wrap"><table className="store-table"><thead><tr><th>Sipariş</th><th>Kaynak</th><th>Durum</th><th>Tutar</th><th>Oluşturma</th><th>Durum güncelle</th></tr></thead><tbody>
     {orders.map(order=><tr key={order.id}>
-     <td><strong>{order.orderNumber}</strong><div style={{fontSize:11,color:'var(--muted)'}}>{order.customerReference??'—'}</div></td>
-     <td>{order.connector?.name??'Manuel'}</td><td><span className="badge">{statusLabels[order.status]}</span></td>
-     <td>{(order.totalMinor/100).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})} {order.currency}</td>
-     <td>{order.createdAt.toLocaleString('tr-TR')}</td>
-     <td>{canManage&&order.source==='MANUAL'&&nextStatuses[order.status].length?<form action={`/api/commerce/orders/${order.id}/status`} method="post" style={{display:'flex',gap:8,alignItems:'center'}}>
+     <td data-label="Sipariş"><strong>{order.orderNumber}</strong><div style={{fontSize:11,color:'var(--muted)'}}>{order.customerReference??'—'}</div></td>
+     <td data-label="Kaynak">{order.connector?.name??'Manuel'}</td><td data-label="Durum"><span className="badge">{statusLabels[order.status]}</span></td>
+     <td data-label="Tutar">{(order.totalMinor/100).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})} {order.currency}</td>
+     <td data-label="Oluşturma">{order.createdAt.toLocaleString('tr-TR')}</td>
+     <td data-label="Durum güncelle">{canManage&&order.source==='MANUAL'&&nextStatuses[order.status].length?<form action={`/api/commerce/orders/${order.id}/status`} method="post" style={{display:'flex',gap:8,alignItems:'center'}}>
        <select className="input" name="status" aria-label={order.orderNumber+' yeni durum'}>{nextStatuses[order.status].map(s=><option key={s} value={s}>{statusLabels[s]}</option>)}</select>
        <button className="action" type="submit">Güncelle</button></form>:<span style={{color:'var(--muted)'}}>—</span>}</td>
     </tr>)}

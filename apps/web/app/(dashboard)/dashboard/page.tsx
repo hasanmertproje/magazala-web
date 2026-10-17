@@ -43,7 +43,7 @@ export default async function DashboardPage() {
     { title: 'Sipariş kayıtları', value: orders, href: '/commerce/orders', note: openOrders+' işlem bekliyor' },
     { title: 'Toplam stok', value: stockBalances?._sum.quantity ?? 0, href: '/commerce/inventory', note: (stockBalances?._count.id ?? 0)+' stok kalemi' },
   ];
-  return <div className="content dashboard-home">
+  return <div className="content dashboard-home commerce-mobile">
     <div className="dashboard-heading">
       <div><span className="dashboard-eyebrow">MAĞAZA OPERASYON MERKEZİ</span><h1 className="page-title">Genel Bakış</h1>
         <p className="page-subtitle">{auth.workspace?.name ?? 'Çalışma Alanı'} · Mağazalarınızın ve ürün verilerinizin güncel durumu</p></div>
@@ -93,10 +93,10 @@ export default async function DashboardPage() {
       {recentOrders.length ? <div className="store-table-wrap"><table className="store-table">
         <thead><tr><th>Sipariş no</th><th>Kaynak</th><th>Durum</th><th>Tutar</th><th>Tarih</th></tr></thead>
         <tbody>{recentOrders.map(order=><tr key={order.id}>
-          <td><strong>{order.orderNumber}</strong></td><td>{order.source === 'MANUAL' ? 'Manuel' : order.source}</td>
-          <td><span className={order.status === 'DELIVERED' ? 'badge active' : 'badge'}>{({NEW:'Yeni',CONFIRMED:'Onaylandı',PACKING:'Hazırlanıyor',SHIPPED:'Kargolandı',DELIVERED:'Teslim edildi',CANCELLED:'İptal'} as Record<string,string>)[order.status] ?? order.status}</span></td>
-          <td>{(order.totalMinor/100).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})} {order.currency}</td>
-          <td>{order.createdAt.toLocaleDateString('tr-TR')}</td>
+          <td data-label="Sipariş no"><strong>{order.orderNumber}</strong></td><td data-label="Kaynak">{order.source === 'MANUAL' ? 'Manuel' : order.source}</td>
+          <td data-label="Durum"><span className={order.status === 'DELIVERED' ? 'badge active' : 'badge'}>{({NEW:'Yeni',CONFIRMED:'Onaylandı',PACKING:'Hazırlanıyor',SHIPPED:'Kargolandı',DELIVERED:'Teslim edildi',CANCELLED:'İptal'} as Record<string,string>)[order.status] ?? order.status}</span></td>
+          <td data-label="Tutar">{(order.totalMinor/100).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})} {order.currency}</td>
+          <td data-label="Tarih">{order.createdAt.toLocaleDateString('tr-TR')}</td>
         </tr>)}</tbody></table></div> : <div className="dashboard-empty-state"><strong>Henüz sipariş kaydı yok</strong><p>Manuel siparişler ve ileride doğrulanacak pazaryeri siparişleri burada görünecek.</p><Link href="/commerce/orders" className="action">Sipariş ekranını aç</Link></div>}
     </section>
     <div className="dashboard-section-heading"><div><h2>Yönetim araçları</h2><p>Öncelikli ticaret modülleri ve ek araçlar</p></div><Link href="/billing">Paket ve kredilerim →</Link></div>
