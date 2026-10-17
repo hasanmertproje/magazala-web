@@ -42,7 +42,9 @@ try {
     ]);
   }
   const initial = await snapshot();
-  assert.deepEqual(initial, [1, 1, 1, 3, 10, 2, 20, 20, 42, 42, 3]);
+  // Migrations may install production plan presets. Assert only demo-owned fixture counts.
+  assert.deepEqual([...initial.slice(0, 2), ...initial.slice(3)], [1, 1, 3, 10, 2, 20, 20, 42, 42, 3]);
+  assert.ok(initial[2] >= 1);
   const user = await demoDb.user.findFirst({ include: { memberships: { include: { workspace: { include: { package: true } } } } } });
   assert.equal(user.isSuperAdmin, false);
   assert.equal(user.memberships[0].role, 'ADMIN');
