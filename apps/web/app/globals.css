@@ -209,3 +209,18 @@ html,body{background:var(--bg);color:var(--text)}
 @media(prefers-reduced-motion:reduce){
  .dashboard-stat,.dashboard-module,.dashboard-bar{transition:none}
 }
+
+/* Mobile commerce records: field-labelled rows instead of horizontal-only data tables. */
+@media(max-width:640px){
+ .commerce-mobile .store-table{min-width:0;width:100%;display:block}
+ .commerce-mobile .store-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+ .commerce-mobile .store-table tbody{display:grid;gap:12px}
+ .commerce-mobile .store-table tbody tr{display:grid;gap:0;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:7px 13px;min-width:0}
+ .commerce-mobile .store-table tbody td{display:grid;grid-template-columns:minmax(90px,36%) minmax(0,1fr);gap:12px;align-items:center;padding:10px 0;min-width:0;overflow-wrap:anywhere}
+ .commerce-mobile .store-table tbody td::before{content:attr(data-label);color:var(--muted);font-size:11px;font-weight:700}
+ .commerce-mobile .store-table tbody td:not([data-label]){display:block}
+ .commerce-mobile .store-table tbody td:not([data-label])::before{content:none}
+ .commerce-mobile .store-table tbody td form{min-width:0;flex-wrap:wrap}
+ .commerce-mobile .store-table tbody td form select{max-width:100%;min-width:0;flex:1 1 120px}
+ .commerce-mobile .store-table-wrap{overflow:visible}
+}
