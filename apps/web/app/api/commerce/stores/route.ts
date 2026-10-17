@@ -4,6 +4,7 @@ import { requireUserApi } from '../../../../lib/auth';
 import { db } from '../../../../lib/db';
 import { assertFeatureEnabled } from '../../../../lib/entitlements';
 import { assertSameOrigin, isHtmlForm, publicRequestUrl } from '../../../../lib/request-security';
+import { isDemoWorkspace } from '../../../../lib/demo-mode';
 import { encryptTrendyolCredentials, trendyolCredentialsSchema } from '../../../../lib/trendyol-connection';
 
 const inputSchema = trendyolCredentialsSchema.extend({name:z.string().trim().min(2).max(100)});
@@ -12,6 +13,9 @@ export async function POST(request:Request) {
   const auth=await requireUserApi();
   if(!auth.ok)return NextResponse.json({ok:false,code:auth.code},{status:auth.status});
   if(!auth.context.user.isSuperAdmin && auth.context.membership?.role!=='ADMIN')return NextResponse.json({ok:false,code:'WORKSPACE_ADMIN_REQUIRED'},{status:403});
+  // Demo users cannot configure live provider credentials or create real marketplace connectors.
+  if (isDemoWorkspace(auth.context.workspace))
+    return NextResponse.json({ ok: false, code: 'DEMO_EXTERNAL_CONNECTOR_DISABLED' }, { status: 403 });
   const form=isHtmlForm(request);
   try {
     assertSameOrigin(request);
