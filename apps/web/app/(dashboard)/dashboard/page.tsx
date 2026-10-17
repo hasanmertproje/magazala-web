@@ -25,10 +25,9 @@ export default async function DashboardPage() {
   const auth = await requireUserPage();
   const workspaceId = auth.workspace?.id;
   const days = calendarDays(new Date(), 14);
-  const [stores, products, assets, notifications, dailyProductCounts, connectors, orders, openOrders, stockBalances, recentOrders, orderStatuses, warehouses, lowStockBalances, failedConnections, dailyOrders] = await Promise.all([
+  const [stores, products, notifications, dailyProductCounts, connectors, orders, openOrders, stockBalances, recentOrders, orderStatuses, warehouses, lowStockBalances, failedConnections, dailyOrders] = await Promise.all([
     workspaceId ? db.storeConnector.count({ where: { workspaceId } }) : 0,
     workspaceId ? db.product.count({ where: { workspaceId } }) : 0,
-    workspaceId ? db.asset.count({ where: { workspaceId } }) : 0,
     db.notification.count({ where: { userId: auth.user.id, readAt: null } }),
     workspaceId ? Promise.all(days.map((day, index) => db.product.count({ where: { workspaceId, createdAt: { gte: day.date, lt: index + 1 < days.length ? days[index + 1].date : new Date(day.date.getTime() + 86400000) } } }))) : days.map(() => 0),
     workspaceId ? db.storeConnector.findMany({ where: { workspaceId }, orderBy: { updatedAt: 'desc' }, take: 5,
@@ -49,7 +48,6 @@ export default async function DashboardPage() {
       GROUP BY 1 ORDER BY 1
     ` : [],
   ]);
-  const counts = new Map(days.map((day, index) => [day.key, dailyProductCounts[index]]));
   const totalCreated = dailyProductCounts.reduce((total, value) => total + value, 0);
   const dailyOrderMap = new Map(dailyOrders.map(row => [row.day, row.count]));
   const recentOrderTotal = days.reduce((sum, day) => sum + (dailyOrderMap.get(day.key) ?? 0), 0);
@@ -65,7 +63,7 @@ export default async function DashboardPage() {
   ];
   const maxCount = Math.max(1, ...dailyOrderMap.values());
   const metrics = [
-    { title: 'Açık siparişler', value: openOrders, href: '/commerce/orders?status=NEW', note: orders.toLocaleString('tr-TR')+' toplam kayıt', icon: 'orders' as const },
+    { title: 'Açık siparişler', value: openOrders, href: '/commerce/orders', note: orders.toLocaleString('tr-TR')+' toplam kayıt', icon: 'orders' as const },
     { title: 'Ürün kataloğu', value: products, href: '/commerce/products', note: totalCreated+' yeni / 14 gün', icon: 'products' as const },
     { title: 'Stok bakiyesi', value: stockBalances?._sum.quantity ?? 0, href: '/commerce/inventory', note: (stockBalances?._count.id ?? 0)+' stok kalemi', icon: 'stock' as const },
     { title: 'Mağazalar', value: stores, href: '/commerce/stores', note: failedConnections+' bağlantı hatası', icon: 'stores' as const },
