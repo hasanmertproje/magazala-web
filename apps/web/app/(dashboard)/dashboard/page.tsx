@@ -25,7 +25,7 @@ export default async function DashboardPage() {
     db.notification.count({ where: { userId: auth.user.id, readAt: null } }),
     workspaceId ? db.product.findMany({ where: { workspaceId, createdAt: { gte: since } }, select: { createdAt: true }, take: 10000 }) : [],
     workspaceId ? db.storeConnector.findMany({ where: { workspaceId }, orderBy: { updatedAt: 'desc' }, take: 5,
-      select: { id: true, name: true, provider: true, mode: true, enabled: true, lastSyncAt: true, lastErrorCode: true } }) : [],
+      select: { id: true, name: true, provider: true, mode: true, enabled: true, lastSyncAt: true, lastValidatedAt: true, lastErrorCode: true } }) : [],
     workspaceId ? db.commerceOrder.count({where:{workspaceId}}) : 0,
     workspaceId ? db.commerceOrder.count({where:{workspaceId,status:{in:['NEW','CONFIRMED','PACKING']}}}) : 0,
     workspaceId ? db.stockBalance.aggregate({where:{workspaceId},_sum:{quantity:true},_count:{id:true}}) : null,
@@ -82,8 +82,8 @@ export default async function DashboardPage() {
         {connectors.length ? <div className="dashboard-connector-list">{connectors.map(c=>
           <div className="dashboard-connector-row" key={c.id}>
             <span className="dashboard-connector-icon" aria-hidden="true">{c.provider.slice(0,1).toUpperCase()}</span>
-            <div><strong>{c.name}</strong><small>{c.provider} · {c.mode==='PRODUCTION'?'Production':'Test / Önizleme'}</small></div>
-            <span className={`badge ${c.enabled&&!c.lastErrorCode?'active':''}`}>{c.lastErrorCode?'Hata':c.enabled?'Etkin':'Pasif'}</span>
+            <div><strong>{c.name}</strong><small>{c.provider} · {c.mode==='PRODUCTION'?'Canlı API ortamı':'Test ortamı'}</small></div>
+            <span className={`badge ${c.enabled&&c.lastValidatedAt&&!c.lastErrorCode?'active':''}`}>{c.lastErrorCode?'Bağlantı hatası':!c.enabled?'Kayıt pasif':c.lastValidatedAt?'Kimlik doğrulandı':'Doğrulanmadı'}</span>
           </div>)}</div>
           : <div className="dashboard-no-stores"><strong>Bağlı mağaza bulunmuyor</strong><p>Bağlantı işlemleri doğrulanmadan canlı veri görüntülenmez.</p><Link href="/commerce/stores" className="action">Bağlantıları görüntüle</Link></div>}
       </section>
