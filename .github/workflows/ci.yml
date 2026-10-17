@@ -60,3 +60,5 @@ jobs:
       - run: npm run build
       - name: Runtime smoke
         run: bash scripts/runtime-smoke.sh
+      - name: Isolated demo seed and customer-data safety regression
+        run: node scripts/demo-seed-check.mjs
