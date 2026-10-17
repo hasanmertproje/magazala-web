@@ -2,12 +2,15 @@ import { NextResponse } from 'next/server';
 import { requireUserApi } from '../../../../../../lib/auth';
 import { db } from '../../../../../../lib/db';
 import { assertSameOrigin, isHtmlForm, publicRequestUrl } from '../../../../../../lib/request-security';
+import { isDemoWorkspace } from '../../../../../../lib/demo-mode';
 import { decryptTrendyolCredentials, validateTrendyolConnection } from '../../../../../../lib/trendyol-connection';
 
 export async function POST(request:Request,{params}:{params:Promise<{id:string}>}) {
   const auth=await requireUserApi();
   if(!auth.ok)return NextResponse.json({ok:false,code:auth.code},{status:auth.status});
   if(!auth.context.user.isSuperAdmin&&auth.context.membership?.role!=='ADMIN')return NextResponse.json({ok:false,code:'WORKSPACE_ADMIN_REQUIRED'},{status:403});
+  if (isDemoWorkspace(auth.context.workspace))
+    return NextResponse.json({ ok: false, code: 'DEMO_EXTERNAL_CONNECTOR_DISABLED' }, { status: 403 });
   const form=isHtmlForm(request);
   try {
     assertSameOrigin(request);
