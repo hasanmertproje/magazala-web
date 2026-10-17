@@ -1,13 +1,23 @@
 import Link from 'next/link';
 import { requireUserPage } from '../../../lib/auth';
 import { db } from '../../../lib/db';
+import { DashboardIcon } from '../../../components/dashboard-icon';
+import { DashboardRefresh } from '../../../components/dashboard-refresh';
 
 export const dynamic = 'force-dynamic';
 
 function calendarDays(now: Date, length: number) {
+  // Reports use Istanbul calendar days, not server UTC midnight.
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Istanbul', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(now);
+  const get = (type: string) => Number(parts.find(part => part.type === type)?.value);
+  const today = Date.UTC(get('year'), get('month') - 1, get('day'));
   return Array.from({ length }, (_, i) => {
-    const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (length - i - 1)));
-    return { date, key: date.toISOString().slice(0, 10), label: date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', timeZone: 'UTC' }) };
+    const date = new Date(today - (length - i - 1) * 86400000);
+    const key = date.toISOString().slice(0, 10);
+    return { date: new Date(key + 'T00:00:00+03:00'), key,
+      label: date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', timeZone: 'UTC' }) };
   });
 }
 
@@ -15,7 +25,7 @@ export default async function DashboardPage() {
   const auth = await requireUserPage();
   const workspaceId = auth.workspace?.id;
   const days = calendarDays(new Date(), 14);
-  const [stores, products, assets, notifications, dailyProductCounts, connectors, orders, openOrders, stockBalances, recentOrders, orderStatuses, warehouses] = await Promise.all([
+  const [stores, products, assets, notifications, dailyProductCounts, connectors, orders, openOrders, stockBalances, recentOrders, orderStatuses, warehouses, lowStockBalances, failedConnections, dailyOrders] = await Promise.all([
     workspaceId ? db.storeConnector.count({ where: { workspaceId } }) : 0,
     workspaceId ? db.product.count({ where: { workspaceId } }) : 0,
     workspaceId ? db.asset.count({ where: { workspaceId } }) : 0,
@@ -29,9 +39,23 @@ export default async function DashboardPage() {
     workspaceId ? db.commerceOrder.findMany({where:{workspaceId},take:6,orderBy:{createdAt:'desc'},select:{id:true,orderNumber:true,status:true,source:true,createdAt:true,totalMinor:true,currency:true}}) : [],
     workspaceId ? db.commerceOrder.groupBy({ by: ['status'], where: { workspaceId }, _count: { _all: true } }) : [],
     workspaceId ? db.warehouse.count({ where: { workspaceId } }) : 0,
+    workspaceId ? db.stockBalance.count({ where: { workspaceId, quantity: { lte: 5 } } }) : 0,
+    workspaceId ? db.storeConnector.count({ where: { workspaceId, lastErrorCode: { not: null } } }) : 0,
+    workspaceId ? db.$queryRaw<Array<{ day: string; count: number }>>`
+      SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Istanbul', 'YYYY-MM-DD') AS "day",
+             COUNT(*)::integer AS "count"
+      FROM "CommerceOrder"
+      WHERE "workspaceId" = ${workspaceId} AND "createdAt" >= ${days[0].date}
+      GROUP BY 1 ORDER BY 1
+    ` : [],
   ]);
   const counts = new Map(days.map((day, index) => [day.key, dailyProductCounts[index]]));
   const totalCreated = dailyProductCounts.reduce((total, value) => total + value, 0);
+  const dailyOrderMap = new Map(dailyOrders.map(row => [row.day, row.count]));
+  const recentOrderTotal = days.reduce((sum, day) => sum + (dailyOrderMap.get(day.key) ?? 0), 0);
+  const previousSeven = days.slice(0, 7).reduce((sum, day) => sum + (dailyOrderMap.get(day.key) ?? 0), 0);
+  const recentSeven = days.slice(7).reduce((sum, day) => sum + (dailyOrderMap.get(day.key) ?? 0), 0);
+  const orderTrend = previousSeven > 0 ? Math.round((recentSeven - previousSeven) * 100 / previousSeven) : null;
   const orderCounts = new Map(orderStatuses.map(item => [item.status, item._count._all]));
   const orderFlow = [
     { status: 'NEW', label: 'Yeni', href: '/commerce/orders?status=NEW' },
@@ -39,12 +63,12 @@ export default async function DashboardPage() {
     { status: 'PACKING', label: 'Hazırlanıyor', href: '/commerce/orders?status=PACKING' },
     { status: 'SHIPPED', label: 'Kargolandı', href: '/commerce/orders?status=SHIPPED' },
   ];
-  const maxCount = Math.max(1, ...counts.values());
+  const maxCount = Math.max(1, ...dailyOrderMap.values());
   const metrics = [
-    { title: 'Tanımlı mağazalar', value: stores, href: '/commerce/stores', note: 'Mağaza bağlantıları' },
-    { title: 'Ürün kayıtları', value: products, href: '/commerce/products', note: 'Merkezi ürün kataloğu' },
-    { title: 'Sipariş kayıtları', value: orders, href: '/commerce/orders', note: openOrders+' işlem bekliyor' },
-    { title: 'Toplam stok', value: stockBalances?._sum.quantity ?? 0, href: '/commerce/inventory', note: (stockBalances?._count.id ?? 0)+' stok kalemi' },
+    { title: 'Açık siparişler', value: openOrders, href: '/commerce/orders?status=NEW', note: orders.toLocaleString('tr-TR')+' toplam kayıt', icon: 'orders' as const },
+    { title: 'Ürün kataloğu', value: products, href: '/commerce/products', note: totalCreated+' yeni / 14 gün', icon: 'products' as const },
+    { title: 'Stok bakiyesi', value: stockBalances?._sum.quantity ?? 0, href: '/commerce/inventory', note: (stockBalances?._count.id ?? 0)+' stok kalemi', icon: 'stock' as const },
+    { title: 'Mağazalar', value: stores, href: '/commerce/stores', note: failedConnections+' bağlantı hatası', icon: 'stores' as const },
   ];
   return <div className="content dashboard-home commerce-mobile">
     <div className="dashboard-heading">
