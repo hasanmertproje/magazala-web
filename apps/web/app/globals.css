@@ -224,3 +224,16 @@ html,body{background:var(--bg);color:var(--text)}
  .commerce-mobile .store-table tbody td form select{max-width:100%;min-width:0;flex:1 1 120px}
  .commerce-mobile .store-table-wrap{overflow:visible}
 }
+
+/* Dashboard V2: live order pipeline and priority navigation */
+.dashboard-flow-card{margin-top:20px}
+.dashboard-flow-card .dashboard-section-heading{margin:0 0 18px}
+.dashboard-flow-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.dashboard-flow-step{display:flex;flex-direction:column;gap:7px;min-width:0;padding:17px;border:1px solid var(--line);border-radius:11px;background:var(--panel2);text-decoration:none;transition:border-color .15s ease}
+.dashboard-flow-step:hover{border-color:#9cb4dc}
+.dashboard-flow-step:focus-visible{outline:3px solid #85a8ed;outline-offset:2px}
+.dashboard-flow-step span{font-size:12px;color:var(--muted);font-weight:650}
+.dashboard-flow-step strong{font-size:clamp(23px,3vw,33px);line-height:1.2;color:var(--text);font-variant-numeric:tabular-nums}
+.dashboard-flow-step small{font-size:11px;color:#3157b7}
+@media(max-width:850px){.dashboard-flow-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:420px){.dashboard-flow-card{padding:14px}.dashboard-flow-grid{gap:8px}.dashboard-flow-step{padding:12px}}
