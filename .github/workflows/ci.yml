@@ -62,3 +62,19 @@ jobs:
         run: bash scripts/runtime-smoke.sh
       - name: Isolated demo seed and customer-data safety regression
         run: node scripts/demo-seed-check.mjs
+      - name: Install pinned browser acceptance runner (CI only)
+        run: npm install --no-save --package-lock=false playwright@1.56.1
+      - name: Install Chromium for browser acceptance
+        run: npx playwright install --with-deps chromium
+      - name: Seed CI-only browser roles and tenant fixtures
+        run: node scripts/browser-acceptance-fixtures.mjs
+      - name: Browser acceptance (7 viewports, both panel roles)
+        run: bash scripts/run-browser-acceptance.sh
+      - name: Upload browser evidence screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: entegrepilot-browser-acceptance
+          path: test-artifacts/screenshots/
+          if-no-files-found: ignore
+          retention-days: 7

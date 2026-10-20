@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { useMobileSidebar } from './use-mobile-sidebar';
 import { navigationForPanel } from '../lib/panel-navigation';
 
 export function AdminShell({ children, displayName, unreadNotifications = 0 }: {
@@ -10,18 +11,11 @@ export function AdminShell({ children, displayName, unreadNotifications = 0 }: {
 }) {
   const pathname = usePathname();
   const sections = navigationForPanel('admin');
-  const [mobileOpen, setMobileOpen] = useState(false);
-  useEffect(() => setMobileOpen(false), [pathname]);
-  useEffect(() => {
-    if (!mobileOpen) return;
-    const handler = (event: KeyboardEvent) => { if (event.key === 'Escape') setMobileOpen(false); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [mobileOpen]);
+  const { open: mobileOpen, setOpen: setMobileOpen, panelRef, triggerRef } = useMobileSidebar(pathname);
 
   return <div className="shell" data-panel="admin">
     {mobileOpen && <button type="button" className="sidebar-backdrop" aria-label="Yönetim menüsünü kapat" onClick={() => setMobileOpen(false)} />}
-    <aside className={'sidebar' + (mobileOpen ? ' sidebar-open' : '')} id="admin-navigation" aria-label="Yönetici menüsü">
+    <aside ref={panelRef} className={'sidebar' + (mobileOpen ? ' sidebar-open' : '')} id="admin-navigation" aria-label="Yönetici menüsü">
       <div className="sidebar-heading">
         <Link href="/admin/workspaces" className="brand brand-lockup" onClick={() => setMobileOpen(false)}>
           <span className="brand-mark" aria-hidden="true">EP</span><span className="brand-wordmark">EntegrePilot<small>Yönetici Konsolu</small></span>
@@ -43,7 +37,7 @@ export function AdminShell({ children, displayName, unreadNotifications = 0 }: {
     </aside>
     <main className="main">
       <header className="topbar">
-        <button type="button" className="mobile-menu-toggle action" aria-controls="admin-navigation"
+        <button ref={triggerRef} type="button" className="mobile-menu-toggle action" aria-controls="admin-navigation"
           aria-expanded={mobileOpen} aria-label={mobileOpen ? 'Yönetim menüsünü kapat' : 'Yönetim menüsünü aç'}
           onClick={() => setMobileOpen(v => !v)}>☰ Menü</button>
         <div className="topbar-context"><span className="topbar-section">EntegrePilot</span><span className="topbar-divider">/</span><strong>Yönetim</strong></div>
