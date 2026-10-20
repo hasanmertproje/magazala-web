@@ -51,3 +51,10 @@ test('admin server layout still requires superadmin authorization', async () => 
   assert.match(auth, /if \(!context\.user\.isSuperAdmin\) redirect\('\/'\)/);
   assert.match(auth, /if \(!context\.user\.isSuperAdmin\) return \{ ok: false as const, status: 403/);
 });
+
+test('all customer and admin sidebar links have intentional vector icons', async () => {
+  const { panelIconForPath } = await importSource('../apps/web/lib/panel-nav-icons.ts');
+  const links = [...hrefs(workspaceNavigationSections), ...hrefs(adminNavigationSections)];
+  assert.ok(links.every((href) => Boolean(panelIconForPath(href))),
+    'Missing icons: ' + links.filter((href) => !panelIconForPath(href)).join(', '));
+});
