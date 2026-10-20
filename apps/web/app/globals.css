@@ -361,3 +361,20 @@ html,body{background:var(--bg);color:var(--text)}
  .dashboard-v3 .dashboard-section-heading{align-items:flex-start}
  .dashboard-v3 .v3-trend{font-size:10px}
 }
+
+/* Query-backed commerce paging and low-stock filtering. */
+.commerce-filterbar,.commerce-pagination{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0}
+.commerce-filterbar>label,.commerce-filterbar>span,.commerce-pagination>span{color:var(--muted);font-size:12px;font-weight:650}
+.commerce-filterbar select{max-width:250px;min-width:0}
+.commerce-pagination{justify-content:flex-end;margin-bottom:0;padding-top:13px;border-top:1px solid var(--line)}
+.commerce-pagination>span{margin-right:auto}
+.commerce-pagination .action{min-width:94px;min-height:40px}
+@media(max-width:540px){
+ .commerce-filterbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+ .commerce-filterbar label,.commerce-filterbar>span{grid-column:1/-1}
+ .commerce-filterbar select{max-width:100%;width:100%}
+ .commerce-filterbar .action{min-height:44px}
+ .commerce-pagination{justify-content:space-between}
+ .commerce-pagination>span{width:100%}
+ .commerce-pagination .action{flex:1}
+}
