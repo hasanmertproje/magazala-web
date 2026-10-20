@@ -41,6 +41,35 @@ try {
     create: { workspaceId: isolated.id, orderNumber: 'CI-E2E-HIDDEN-ORDER', totalMinor: 9999999, source: 'MANUAL', status: 'NEW' },
     update: {},
   });
+  // More than one page of historical records; they must remain navigable.
+  await db.commerceOrder.createMany({
+    data:Array.from({length:55},(_,i)=>({
+      workspaceId,orderNumber:'CI-E2E-OLD-'+String(i+1).padStart(3,'0'),
+      totalMinor:10000+i,status:'DELIVERED',source:'MANUAL',
+      createdAt:new Date(Date.now()-(20+i)*86400000),
+    })),
+    skipDuplicates:true,
+  });
+  const warehouse=await db.warehouse.upsert({
+    where:{workspaceId_code:{workspaceId,code:'CI-E2E'}},
+    create:{workspaceId,code:'CI-E2E',name:'CI E2E Depo'},
+    update:{},
+  });
+  for(const [sku,name,quantity] of [
+    ['CI-E2E-LOW','CI E2E Düşük Stok',1],
+    ['CI-E2E-OK','CI E2E Sağlıklı Stok',9],
+  ]){
+    const product=await db.product.upsert({
+      where:{workspaceId_internalSku:{workspaceId,internalSku:sku}},
+      create:{workspaceId,internalSku:sku,name},
+      update:{},
+    });
+    await db.stockBalance.upsert({
+      where:{warehouseId_productId:{warehouseId:warehouse.id,productId:product.id}},
+      create:{workspaceId,warehouseId:warehouse.id,productId:product.id,quantity},
+      update:{quantity},
+    });
+  }
   console.log('CI browser fixtures created (two roles, two isolated tenants).');
 } finally {
   await db.$disconnect();
