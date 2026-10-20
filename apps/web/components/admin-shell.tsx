@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useMobileSidebar } from './use-mobile-sidebar';
 import { navigationForPanel } from '../lib/panel-navigation';
+import { PanelNavIcon } from './panel-nav-icon';
 
 export function AdminShell({ children, displayName, unreadNotifications = 0 }: {
   children: ReactNode; displayName: string; unreadNotifications?: number;
@@ -29,7 +30,7 @@ export function AdminShell({ children, displayName, unreadNotifications = 0 }: {
           {links.map(([label, href]) =>
             <Link key={href} href={href} className={'nav-link' + (pathname === href ? ' is-current' : '')}
               aria-current={pathname === href ? 'page' : undefined} onClick={() => setMobileOpen(false)}>
-              <span className="nav-link-indicator" aria-hidden="true"/>{label}
+              <PanelNavIcon href={href}/>{label}
             </Link>)}
         </div>)}
       </nav>

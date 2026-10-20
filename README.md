@@ -19,18 +19,21 @@ Repo, çalışan production çekirdeği ile henüz kullanıcı iş akışı kesi
 - Bildirim merkezi, audit ve usage kayıtları
 - Sistem Sağlığı ekranı
 
-### Beta
-- Products
-- Internal SKU / barcode
-- Import / Export temel modeli
-- Automation foundation
+### Beta — dahili işlemler
+- Ürün kataloğu ve dahili SKU / barkod
+- Depolar, stok bakiyeleri ve denetlenen stok hareketleri (pazaryerine gönderilmez)
+- Manuel siparişler, durum geçişleri ve işlem geçmişi (harici sipariş senkronizasyonu yok)
+- İçe / dışa aktarma ve otomasyon temel modelleri
+- Gerçek sipariş/ürün istatistiklerini gösteren Dashboard V3
 
-### Preview
-- Stores / marketplace connectors
-- Trendyol connector boundary
-- Inventory / shelves / orders
+### Preview — dış sistem entegrasyonları
+- Mağaza bağlantı kaydı ve kimlik doğrulama sınırları; otomatik sipariş/ürün/stok sync aktif değil
+- Trendyol ve diğer pazaryerleri ile gerçek veri senkronizasyonu
+- Sevkiyat, fatura, iade ve ödeme alma iş akışları
 
-Bu alanlar iş akışı doğrulanmadan production senkronizasyonu yapmaz.
+Gerçekleşmemiş senkronizasyon veya faturalandırma kullanıcıya aktifmiş gibi sunulmaz.
+
+**Durum kaynağı:** [Güncel proje handoff'u](PROJECT_STATE.md), [uygulama/kabul durumu](STATUS.md), [izole demo kurulumu](docs/ISOLATED_DEMO_ENVIRONMENT.md). Demo seed'i hazırdır; halka açık demo ortamının oluşturulduğu iddia edilmez.
 
 ## Alan adı ve PoyrazHosting dağıtımı
 

@@ -1,36 +1,43 @@
-# Implementation Status
+# EntegrePilot — Implementation and verification status
 
-## Production-connected core
-- Authentication setup/login/logout + persistent session
-- Workspace isolation, invitations and workspace switching
-- Customer/workspace control center
-- Package, entitlement, feature override and quota foundation
-- Provider Center with encrypted credentials
-- Model registry, provider discovery and Smart Model Router
-- Supported text/image provider runtime adapters
-- AI Design Studio generation, reference upload, private storage, history and lineage
-- Product Intelligence Idea/Research modes, provenance and saved sessions
-- Tasarlayalım AI discovery conversations
-- User-confirmed requirements
-- Admin requirement queue, status/priority, clarification threads and exports
-- Notifications, audit logs and usage ledger
-- System Health + public liveness/readiness endpoints
+Updated: 2026-10-20. **Always verify `main`, CI and Railway before citing a deployment.** See [PROJECT_STATE.md](PROJECT_STATE.md).
 
-## Beta
-- Products
-- Internal SKU/barcode foundation
-- Import/export data model
-- Automation foundation
+## Deployed application foundation
+- Authentication, persistent sessions, workspace isolation and invitations; superadmin-only administration guarded on the server
+- Customer workspace and administrator shells with separate menus
+- Packages, feature entitlements, quota usage, workspace overrides
+- AI provider registry, credentials, model router, Design Studio and Product Intelligence foundations
+- Requirements/discovery conversations, notifications, audit and usage records
+- Internal product catalog and SKU/barcode tooling
+- **Internal manual orders**: persisted state transitions and audit records (not marketplace order syncing)
+- **Internal inventory**: warehouse balances and ledger adjustments (not marketplace inventory sync)
+- Dashboard V3: tenant-scoped operational metrics and real, Istanbul-time order chart
+- Filtered OPEN order and LOW stock drilldowns; paginated record lists
 
-## Preview / intentionally not production-connected
-- Marketplace stores and synchronization
-- Trendyol live publishing/sync
-- Inventory/warehouse/shelf workflows
-- Orders/fulfillment
+## Verified automated gates
+- npm lockfile install, production dependency audit, Prisma validation and clean PostgreSQL migration
+- TypeScript, domain/security regression tests and Next production build
+- Runtime smoke of auth, packages, tenant products and marketplace secrets
+- Separate disposable PostgreSQL database: idempotent demo fixture seed and refusal to use customer data
+- Real Chromium: superadmin and ordinary customer sessions; authorization, tenant data separation, navigation/back-forward, keyboard/scroll and overflow checks at **320, 375, 390, 430, 768, 1024, 1440 px** across Dashboard/Orders/Inventory/Admin
+- CI screenshot artifacts are available for visual review. Browser geometry and interaction tests are not evidence of full manual visual acceptance.
 
-These areas remain visible as product direction but must be finalized from real operational requirements before live marketplace or inventory mutations are enabled.
+## Beta or preview / not falsely presented as live
+- Product and internal commerce operations: beta
+- External Trendyol marketplace integration, product/order/inventory sync: preview or not connected
+- Delivery, invoicing, returns/refunds and marketplace settlement: not production-integrated
+- Automation capabilities and external AI provider integrations require feature-specific live verification
+- Subscription payment charging, billing and customer checkout: not implemented as a payment flow
 
-## Production gates
-- Pull request CI performs dependency audit, Prisma validation, clean PostgreSQL migration deployment, production preflight, text-policy scan, tests/typechecks and Next production build.
-- Production deploy must provide PostgreSQL, S3-compatible private object storage, secure session/encryption secrets and at least the AI providers required by enabled features.
-- Source-backed Product Intelligence Research additionally requires an approved SearXNG endpoint.
+## Demo status
+- PR #41 supplies a **secure, repeatable, fully tested isolated seed**: 1 non-superadmin demo ADMIN user, premium entitlements, 3 MOCK storefronts, example products, warehouses, orders and notifications
+- No separate live demo application/database or usable public demo login was confirmed/provisioned in the inspected Railway environment
+- Never seed fixtures into the production customer database or enable real marketplace connections for demo tenants
+
+## Remaining gates
+1. Human review of CI screenshots and actual mobile/touch-device acceptance
+2. Fully isolated demo Railway resources and privately provisioned credentials if a live demo is required; account for hosting cost
+3. Production tenant authorization/integration, object storage, backups/restore, load and security acceptance
+4. True marketplace integrations only after supported APIs, idempotency, retry and reconciliation are verified
+
+See [production acceptance](docs/PRODUCTION_ACCEPTANCE.md) and [isolated demo environment](docs/ISOLATED_DEMO_ENVIRONMENT.md).

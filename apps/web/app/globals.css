@@ -378,3 +378,25 @@ html,body{background:var(--bg);color:var(--text)}
  .commerce-pagination>span{width:100%}
  .commerce-pagination .action{flex:1}
 }
+
+/* Distinct navigation glyphs built from EntegrePilot's own SVG stroke vocabulary. */
+.shell[data-panel] .nav-icon{width:20px;height:21px;flex:none;display:inline-grid;place-items:center;color:#8ea7c7}
+.shell[data-panel] .nav-link:hover .nav-icon{color:#d4e2f7}
+.shell[data-panel] .nav-link.is-current .nav-icon{color:#b3cbff}
+.shell[data-panel] .nav a.nav-link{gap:10px}
+.shell[data-panel] .nav-link:focus-visible{outline:2px solid #8aabf7;outline-offset:2px}
+
+/* On narrow screens, secondary modules become compact tappable tools, not six stacked cards. */
+@media(max-width:640px){
+ .dashboard-v3 .dashboard-module-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .dashboard-v3 .dashboard-module{min-height:114px;padding:14px;display:flex;flex-direction:column;gap:4px}
+ .dashboard-v3 .dashboard-module-tag{font-size:9px}
+ .dashboard-v3 .dashboard-module h3{font-size:14px;line-height:1.32;margin:6px 0 2px}
+ .dashboard-v3 .dashboard-module p{display:none}
+ .dashboard-v3 .dashboard-module-action{margin-top:auto;padding-top:8px;font-size:11px}
+ .dashboard-v3 .dashboard-bar-column:nth-child(even) small{visibility:hidden}
+}
+@media(max-width:350px){
+ .dashboard-v3 .dashboard-module{padding:12px;min-height:118px}
+ .dashboard-v3 .dashboard-module h3{font-size:13px}
+}
