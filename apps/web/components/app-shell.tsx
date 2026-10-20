@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useMobileSidebar } from './use-mobile-sidebar';
 import type { ReactNode } from 'react';
 import { navigationForPanel } from '../lib/panel-navigation';
 
@@ -34,24 +34,15 @@ export function AppShell({
   isSuperAdmin?: boolean;
   unreadNotifications?: number;
 }) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  useEffect(() => { setMobileMenuOpen(false); }, [pathname]);
-  useEffect(() => {
-    if (!mobileMenuOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setMobileMenuOpen(false); };
-    window.addEventListener('keydown', onKeyDown);
-    return () => { window.removeEventListener('keydown', onKeyDown); document.body.style.overflow = previousOverflow; };
-  }, [mobileMenuOpen]);
+  const { open: mobileMenuOpen, setOpen: setMobileMenuOpen, panelRef, triggerRef } = useMobileSidebar(pathname);
   const sectionLabel = sectionsLabel(pathname);
   const sections = navigationForPanel('workspace');
   return <div className="shell" data-panel="workspace">
     {mobileMenuOpen && <button type="button" className="sidebar-backdrop" aria-label="Menüyü kapat" onClick={() => setMobileMenuOpen(false)} />}
 
-    <aside className={`sidebar ${mobileMenuOpen ? "sidebar-open" : ""}`} id="main-navigation" aria-label="Ana menü">
-      <div className="sidebar-heading"><Link href="/dashboard" className="brand brand-lockup"><span className="brand-mark" aria-hidden="true">EP</span><span className="brand-wordmark">EntegrePilot<small>Commerce Workspace</small></span></Link><button type="button" className="sidebar-close action" onClick={() => setMobileMenuOpen(false)} aria-label="Menüyü kapat">✕</button></div>
+    <aside ref={panelRef} className={`sidebar ${mobileMenuOpen ? "sidebar-open" : ""}`} id="main-navigation" aria-label="Ana menü">
+      <div className="sidebar-heading"><Link href="/dashboard" className="brand brand-lockup" onClick={() => setMobileMenuOpen(false)}><span className="brand-mark" aria-hidden="true">EP</span><span className="brand-wordmark">EntegrePilot<small>Commerce Workspace</small></span></Link><button type="button" className="sidebar-close action" onClick={() => setMobileMenuOpen(false)} aria-label="Menüyü kapat">✕</button></div>
       <nav className="nav"><div className="nav-overview">ÇALIŞMA ALANI</div>{sections.map(([title,items], sectionIndex) => <div key={title} className="nav-section">
         <div className="nav-title"><span>{String(sectionIndex + 1).padStart(2, "0")}</span>{title}</div>
         {items.map(([label,href]) => <Link key={label} href={href} aria-current={pathname === href ? "page" : undefined} className={pathname === href ? "nav-link is-current" : "nav-link"} onClick={() => setMobileMenuOpen(false)}><span className="nav-link-indicator" aria-hidden="true" />{label}{href==='/notifications'&&unreadNotifications>0?<span className="badge active" style={{marginLeft:7}}>{unreadNotifications}</span>:null}</Link>)}
@@ -59,7 +50,7 @@ export function AppShell({
     </aside>
     <main className="main">
       <header className="topbar">
-        <button type="button" className="mobile-menu-toggle action" aria-label={mobileMenuOpen ? "Menüyü kapat" : "Menüyü aç"} aria-controls="main-navigation" aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen((current) => !current)}><span aria-hidden="true">☰</span> <span>Menü</span></button>
+        <button ref={triggerRef} type="button" className="mobile-menu-toggle action" aria-label={mobileMenuOpen ? "Menüyü kapat" : "Menüyü aç"} aria-controls="main-navigation" aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen((current) => !current)}><span aria-hidden="true">☰</span> <span>Menü</span></button>
         <div className="topbar-context"><span className="topbar-section">{sectionLabel}</span><span className="topbar-divider">/</span>
           {workspaces.length > 1 ? <form action="/api/workspace/switch" method="post" style={{display:'flex',gap:7,alignItems:'center'}}>
             <select className="input" name="workspaceId" defaultValue={workspaceId} aria-label="Aktif çalışma alanı" style={{minWidth:180,padding:'7px 10px'}}>{workspaces.map((workspace)=><option value={workspace.id} key={workspace.id}>{workspace.name}</option>)}</select>
