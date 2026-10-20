@@ -63,7 +63,7 @@ export default async function DashboardPage() {
   ];
   const maxCount = Math.max(1, ...dailyOrderMap.values());
   const metrics = [
-    { title: 'Açık siparişler', value: openOrders, href: '/commerce/orders', note: orders.toLocaleString('tr-TR')+' toplam kayıt', icon: 'orders' as const },
+    { title: 'Açık siparişler', value: openOrders, href: '/commerce/orders?status=OPEN', note: orders.toLocaleString('tr-TR')+' toplam kayıt', icon: 'orders' as const },
     { title: 'Ürün kataloğu', value: products, href: '/commerce/products', note: totalCreated+' yeni / 14 gün', icon: 'products' as const },
     { title: 'Stok bakiyesi', value: stockBalances?._sum.quantity ?? 0, href: '/commerce/inventory', note: (stockBalances?._count.id ?? 0)+' stok kalemi', icon: 'stock' as const },
     { title: 'Mağazalar', value: stores, href: '/commerce/stores', note: failedConnections+' bağlantı hatası', icon: 'stores' as const },
@@ -81,8 +81,8 @@ export default async function DashboardPage() {
         <h2>{openOrders ? openOrders.toLocaleString('tr-TR') + ' sipariş işlem bekliyor' : 'Bekleyen sipariş bulunmuyor'}</h2>
         <p>{openOrders ? 'Sipariş akışındaki bekleyen kayıtları öncelik sırasıyla yönetin.' : 'Yeni sipariş oluştuğunda iş akışında gösterilir.'}</p>
         <div className="v3-command-actions">
-          <Link href="/commerce/orders" className="v3-command-primary">Sipariş ekranına git <DashboardIcon name="arrow" size={17}/></Link>
-          <Link href="/commerce/inventory" className="v3-command-secondary">Stokları incele <DashboardIcon name="arrow" size={16}/></Link>
+          <Link href="/commerce/orders?status=OPEN" className="v3-command-primary">Bekleyen siparişleri aç <DashboardIcon name="arrow" size={17}/></Link>
+          <Link href="/commerce/inventory?filter=LOW" className="v3-command-secondary">Düşük stokları incele <DashboardIcon name="arrow" size={16}/></Link>
         </div>
         <div className="v3-command-meta">
           <span><DashboardIcon name="warehouse" size={15}/>{warehouses.toLocaleString('tr-TR')} depo</span>
@@ -92,12 +92,12 @@ export default async function DashboardPage() {
       </div>
       <aside className="v3-priorities" aria-label="İşlem gerektiren kayıtlar">
         <div className="v3-priorities-header"><span>ÖNCELİKLİ İŞLER</span><DashboardIcon name="clock" size={18}/></div>
-        <Link href="/commerce/orders" className="v3-priority">
+        <Link href="/commerce/orders?status=OPEN" className="v3-priority">
           <span className="v3-priority-icon"><DashboardIcon name="orders" size={19}/></span>
           <span><strong>Bekleyen siparişler</strong><small>Yeni, onaylı ve hazırlanan kayıtlar</small></span>
           <b>{openOrders.toLocaleString('tr-TR')}</b>
         </Link>
-        <Link href="/commerce/inventory" className="v3-priority">
+        <Link href="/commerce/inventory?filter=LOW" className="v3-priority">
           <span className="v3-priority-icon"><DashboardIcon name={lowStockBalances ? 'warning' : 'stock'} size={19}/></span>
           <span><strong>Düşük stok kayıtları</strong><small>Beş adet veya altında bakiye</small></span>
           <b>{lowStockBalances.toLocaleString('tr-TR')}</b>
@@ -127,7 +127,7 @@ export default async function DashboardPage() {
           <span className="v3-trend">{orderTrend === null ? 'Önceki dönem verisi yok' : (orderTrend > 0 ? '+' : '') + orderTrend + '% / önceki 7 gün'}</span></div>
         <div className="dashboard-bar-chart" role="img" aria-label={days.map(day=>`${day.label}: ${dailyOrderMap.get(day.key) ?? 0} sipariş`).join(', ')}>
           {days.map(day=><div className="dashboard-bar-column" key={day.key} title={`${day.label}: ${dailyOrderMap.get(day.key) ?? 0} sipariş`}>
-            <span className="dashboard-bar" style={{height:`${Math.max(3, ((dailyOrderMap.get(day.key) ?? 0) / maxCount) * 100)}%`}} />
+            <span className="dashboard-bar" style={{height: dailyOrderMap.get(day.key) ? `${Math.max(4, ((dailyOrderMap.get(day.key) ?? 0) / maxCount) * 100)}%` : "0%"}} />
             <small>{Number(day.key.slice(-2))}</small>
           </div>)}
         </div>
