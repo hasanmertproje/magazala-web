@@ -91,6 +91,39 @@ try {
   await page.goForward({ waitUntil: 'domcontentloaded' });
   await assertPanel(page, 'workspace');
 
+  // Dashboard priority links must resolve to the corresponding real filtered records.
+  await page.goto(base + '/dashboard');
+  const lowLink=page.locator('.v3-priority[href="/commerce/inventory?filter=LOW"]');
+  assert.equal(await lowLink.count(),1);
+  const openLink=page.locator('.v3-priority[href="/commerce/orders?status=OPEN"]');
+  assert.equal(await openLink.count(),1);
+  await openLink.click();
+  assert.equal(await page.locator('#order-status-filter').inputValue(),'OPEN');
+  let list=await page.locator('.store-table tbody').first().innerText();
+  assert.ok(list.includes('CI-E2E-VISIBLE-ORDER'));
+  assert.ok(!list.includes('CI-E2E-OLD-001'), 'closed orders entered the OPEN filter');
+
+  const filtered=await context.request.get(base+'/api/commerce/orders?status=OPEN');
+  assert.equal(filtered.status(),200);
+  const filteredData=await filtered.json();
+  assert.equal(filteredData.pagination.total,1);
+  assert.equal(filteredData.orders[0].orderNumber,'CI-E2E-VISIBLE-ORDER');
+
+  await page.goto(base+'/commerce/orders');
+  assert.equal(await page.locator('a[href="/commerce/orders?page=2"]').count(),1,
+    'historical orders lack next-page navigation');
+  await page.locator('a[href="/commerce/orders?page=2"]').click();
+  list=await page.locator('.store-table tbody').first().innerText();
+  assert.ok(list.includes('CI-E2E-OLD-'), 'older orders inaccessible on page 2');
+  assert.equal(await page.locator('a[href="/commerce/orders"]').count()>0,true);
+
+  await page.goto(base+'/dashboard');
+  await page.locator('.v3-priority[href="/commerce/inventory?filter=LOW"]').click();
+  assert.equal(await page.locator('#inventory-filter').inputValue(),'LOW');
+  const lowRows=await page.locator('.store-table tbody').first().innerText();
+  assert.ok(lowRows.includes('CI E2E Düşük Stok'));
+  assert.ok(!lowRows.includes('CI E2E Sağlıklı Stok'));
+
   for (const width of widths) {
     await page.setViewportSize({ width, height: 900 });
     for (const route of routes) {

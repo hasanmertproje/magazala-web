@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireUserApi } from '../../../../lib/auth';
 import { db } from '../../../../lib/db';
+import { orderStatusCondition, parseOrderFilter, parsePage, clampPage } from '../../../../lib/order-filters';
 import { assertFeatureEnabled } from '../../../../lib/entitlements';
 import { assertSameOrigin, isHtmlForm, publicRequestUrl } from '../../../../lib/request-security';
 
@@ -18,10 +19,21 @@ export async function GET(request: Request) {
  if(!auth.ok) return NextResponse.json({ok:false,code:auth.code},{status:auth.status});
  try {
   await assertFeatureEnabled(auth.context.workspace.id,auth.context.user.isSuperAdmin,'commerce.products');
-  const status=new URL(request.url).searchParams.get('status');
-  const parsed=z.enum(['NEW','CONFIRMED','PACKING','SHIPPED','DELIVERED','CANCELLED']).safeParse(status);
-  const orders=await db.commerceOrder.findMany({where:{workspaceId:auth.context.workspace.id,...(parsed.success?{status:parsed.data}:{})},orderBy:{createdAt:'desc'},take:100,select:{id:true,orderNumber:true,status:true,totalMinor:true,currency:true,source:true,customerReference:true,createdAt:true}});
-  return NextResponse.json({ok:true,orders});
+  const params=new URL(request.url).searchParams;
+  const rawStatus=params.get('status');
+  const filter=parseOrderFilter(rawStatus);
+  if(rawStatus && !filter)return NextResponse.json({ok:false,code:'INVALID_ORDER_FILTER'},{status:400});
+  const where={workspaceId:auth.context.workspace.id,...orderStatusCondition(filter)};
+  // Preserve the historical 100-row API page size for existing clients.
+  const limit=100;
+  const total=await db.commerceOrder.count({where});
+  const pages=Math.max(1,Math.ceil(total/limit));
+  const page=clampPage(parsePage(params.get('page')),total,limit);
+  const orders=await db.commerceOrder.findMany({
+    where,orderBy:[{createdAt:'desc'},{id:'desc'}],skip:(page-1)*limit,take:limit,
+    select:{id:true,orderNumber:true,status:true,totalMinor:true,currency:true,source:true,customerReference:true,createdAt:true}
+  });
+  return NextResponse.json({ok:true,orders,pagination:{page,pages,total,limit,hasNext:page<pages}});
  } catch {return NextResponse.json({ok:false,code:'ORDERS_UNAVAILABLE'},{status:403});}
 }
 export async function POST(request:Request) {
