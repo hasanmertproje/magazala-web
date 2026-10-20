@@ -1,3 +1,38 @@
+# EntegrePilot — ACTIVE PROJECT STATE (2026-10-20)
+
+> **Authoritative handoff index.** Always fetch the current GitHub `main` SHA and Railway production deployment before starting a new milestone. The long 2026-10-13 project history below is **archived**, not a valid starting baseline. Never restart from `da6ce68d` or `d07fd280` merely because they appear in old reports.
+
+## Latest confirmed baseline at this update
+
+- Repository: `hasanmertproje/magazala-web`; default branch: `main`.
+- Confirmed `main` after PR #43: `0d192b1af451d59098fbb2759914631ded2fa0dd`.
+- Confirmed Railway production deployment: `e492e486-a1be-4afb-8bc3-895fe50a9d32` — `SUCCESS`, corresponding to the same commit.
+- Railway project `magazala-test`: production environment has the application service `magazala-web` and a separate PostgreSQL service. This is **not** an isolated customer-facing demo environment.
+- CI validates build, typechecks, migrations, API/security, an isolated demo seed on ephemeral PostgreSQL, and headless Chromium user acceptance across 320/375/390/430/768/1024/1440 px on Dashboard, Orders, Inventory and Admin Workspaces. CI evidence screenshots exist but passing geometry tests does not equal exhaustive human visual sign-off.
+
+## Shipped increments — do not repeat
+
+- #37: mobile commerce record adaptations and correct aggregate stock totals.
+- #38: operational order pipeline and uncapped daily product counts.
+- #39: admin/workspace sidebar isolation, with server-enforced superadmin role.
+- #40: Dashboard V3 real order analytics, priority queues, responsive hierarchy and reusable SVG vocabulary.
+- #41: physically isolated **CI demo seed** and fail-closed guards; **no public demo account or independent live demo DB/application was provisioned**.
+- #42: shared keyboard-accessible mobile drawer, Escape/focus/scroll handling and real Chromium role/tenant/viewport tests.
+- #43: actionable OPEN/LOW priority deep links; paginated tenant-scoped orders and stock ledgers; zero-count chart fix.
+- #44: follow-up design PR adds module-specific navigation icons, compact mobile secondary tools and more browser checks; check its **current PR/CI/merge status** before considering it delivered.
+
+## Verified scope versus remaining acceptance
+
+- Internal orders and warehouse stock ledgers are implemented; **marketplace sync, invoicing, shipping and payment capture are not live**.
+- Demo seed uses a non-superadmin workspace ADMIN and MOCK-only connectors. It is CI-verified, not a usable hosted account. An isolated Railway project/environment **with an independent new PostgreSQL service**, credential provisioning and live browser login acceptance remains open and may incur recurring infrastructure cost.
+- CI browser checks cover structural route isolation and viewport overflow. Confirm actual design quality by inspecting screenshot artifacts; carry out manual/touch-device checks for production launch.
+- Real customer production data must never be used for fixtures, demos, or browser CI acceptance.
+- Do not claim production-ready without `docs/PRODUCTION_ACCEPTANCE.md` and the live feature-specific gates.
+
+---
+
+# Archived historical snapshot — NOT CURRENT BASELINE
+
 # PROJECT_STATE.md
 
 Updated: 2026-10-13
