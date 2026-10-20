@@ -26,6 +26,8 @@ async function assertPanel(page, panel) {
   const links = await shell.locator('aside nav a[href]').evaluateAll((nodes) =>
     nodes.map((node) => node.getAttribute('href')));
   assert.ok(links.length > 2, panel + ' navigation should not be empty');
+  const iconCount=await shell.locator('aside nav a .nav-icon svg').count();
+  assert.equal(iconCount,links.length,panel+' navigation icons must render for every link');
   assert.ok(links.every((href) => panel === 'admin' ?
     href.startsWith('/admin/') : !href.startsWith('/admin/')),
     panel + ' leaked routes: ' + links.join(', '));
@@ -130,6 +132,11 @@ try {
       await page.goto(base + route, { waitUntil: 'domcontentloaded' });
       await assertPanel(page, route.startsWith('/admin/') ? 'admin' : 'workspace');
       await auditOverflow(page, route, width);
+      if (route==='/dashboard' && width<=640) {
+        const gridColumns=await page.locator('.dashboard-module-grid').evaluate((node)=>
+          getComputedStyle(node).gridTemplateColumns.trim().split(/\\s+/).length);
+        assert.equal(gridColumns,2,'mobile secondary tools must use a compact native grid');
+      }
       await page.screenshot({
         path: out + '/' + route.replaceAll('/', '_').replace(/^_/, '') + '-' + width + '.png',
         fullPage: true,
