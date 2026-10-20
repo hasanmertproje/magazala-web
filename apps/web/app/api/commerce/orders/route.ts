@@ -24,7 +24,8 @@ export async function GET(request: Request) {
   const filter=parseOrderFilter(rawStatus);
   if(rawStatus && !filter)return NextResponse.json({ok:false,code:'INVALID_ORDER_FILTER'},{status:400});
   const where={workspaceId:auth.context.workspace.id,...orderStatusCondition(filter)};
-  const limit=50;
+  // Preserve the historical 100-row API page size for existing clients.
+  const limit=100;
   const total=await db.commerceOrder.count({where});
   const pages=Math.max(1,Math.ceil(total/limit));
   const page=clampPage(parsePage(params.get('page')),total,limit);
