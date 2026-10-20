@@ -65,7 +65,10 @@ async function mobileDrawer(page, route, width) {
   assert.notEqual(await page.evaluate(() => document.body.style.overflow), 'hidden');
   assert.equal(await page.evaluate(() => document.activeElement?.classList.contains('mobile-menu-toggle')), true);
   await menu.click();
-  await page.locator('.sidebar-backdrop').click({ position: { x: 4, y: 4 } });
+  // The overlay begins behind the drawer; click the visible strip beside it.
+  const box = await page.locator('aside.sidebar-open').boundingBox();
+  assert.ok(box);
+  await page.mouse.click(width - 5, Math.min(180, box.height / 2));
   assert.equal(await menu.getAttribute('aria-expanded'), 'false');
 }
 
