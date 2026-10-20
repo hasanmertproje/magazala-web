@@ -1,22 +1,34 @@
 import { randomUUID } from 'node:crypto';
 import { requireUserPage } from '../../../../lib/auth';
 import { db } from '../../../../lib/db';
+import { parsePage, clampPage } from '../../../../lib/order-filters';
 
 export const dynamic='force-dynamic';
 
-export default async function InventoryPage({searchParams}:{searchParams:Promise<{notice?:string;error?:string}>}){
+export default async function InventoryPage({searchParams}:{searchParams:Promise<{notice?:string;error?:string;filter?:string;page?:string}>}){
   const auth=await requireUserPage();
   const workspaceId=auth.workspace?.id;
   const params=await searchParams;
   const canManage=auth.user.isSuperAdmin||auth.membership?.role==='ADMIN';
-  const [warehouses,products,balances,movements,stockTotals,stockMovementCount]=await Promise.all([
+  const lowOnly=params.filter==='LOW';
+  const pageSize=50;
+  const balanceWhere=workspaceId?{workspaceId,...(lowOnly?{quantity:{lte:5}}:{})}:null;
+  const [warehouses,products,movements,stockTotals,stockMovementCount,filteredCount]=await Promise.all([
     workspaceId?db.warehouse.findMany({where:{workspaceId},orderBy:{name:'asc'}}):[],
     workspaceId?db.product.findMany({where:{workspaceId},select:{id:true,name:true,internalSku:true},orderBy:{name:'asc'},take:500}):[],
-    workspaceId?db.stockBalance.findMany({where:{workspaceId},include:{product:{select:{name:true,internalSku:true}},warehouse:{select:{name:true,code:true}}},orderBy:{updatedAt:'desc'},take:100}):[],
     workspaceId?db.stockMovement.findMany({where:{workspaceId},include:{product:{select:{name:true}},warehouse:{select:{name:true}}},orderBy:{createdAt:'desc'},take:15}):[],
     workspaceId?db.stockBalance.aggregate({where:{workspaceId},_sum:{quantity:true},_count:{id:true}}):null,
     workspaceId?db.stockMovement.count({where:{workspaceId}}):0,
+    balanceWhere?db.stockBalance.count({where:balanceWhere}):0,
   ]);
+  const page=clampPage(parsePage(params.page),filteredCount,pageSize);
+  const pages=Math.max(1,Math.ceil(filteredCount/pageSize));
+  const balancePage=(next:number)=>'/commerce/inventory'+
+    '?'+new URLSearchParams({...lowOnly?{filter:'LOW'}:{},page:String(next)}).toString();
+  const balances=balanceWhere?await db.stockBalance.findMany({
+    where:balanceWhere,include:{product:{select:{name:true,internalSku:true}},warehouse:{select:{name:true,code:true}}},
+    orderBy:[{updatedAt:'desc'},{id:'desc'}],skip:(page-1)*pageSize,take:pageSize,
+  }):[];
   const total=stockTotals?._sum.quantity ?? 0;
   const balanceCount=stockTotals?._count.id ?? 0;
   return <div className="content commerce-mobile">
@@ -45,10 +57,25 @@ export default async function InventoryPage({searchParams}:{searchParams:Promise
         </form>:<p className="page-subtitle">{canManage?'Önce bir depo ve en az bir ürün oluşturun.':'Stok düzeltmesi için yönetici yetkisi gerekir.'}</p>}
       </section>
     </div>
-    <section className="card" style={{marginTop:20}}><h2>Stok bakiyeleri</h2><div className="store-table-wrap"><table className="store-table"><thead><tr><th>Ürün</th><th>SKU</th><th>Depo</th><th>Adet</th><th>Güncelleme</th></tr></thead><tbody>
+    <section className="card" style={{marginTop:20}}><h2>Stok bakiyeleri</h2>
+    <form action="/commerce/inventory" method="get" className="commerce-filterbar">
+      <label htmlFor="inventory-filter">Göster</label>
+      <select className="input" id="inventory-filter" name="filter" defaultValue={lowOnly?'LOW':''}>
+        <option value="">Tüm bakiyeler</option><option value="LOW">Düşük stok (5 ve altı)</option>
+      </select>
+      <button type="submit" className="action">Filtrele</button>
+      <span>{filteredCount.toLocaleString('tr-TR')} kayıt · Sayfa {page}/{pages}</span>
+    </form>
+    <div className="store-table-wrap"><table className="store-table"><thead><tr><th>Ürün</th><th>SKU</th><th>Depo</th><th>Adet</th><th>Güncelleme</th></tr></thead><tbody>
       {balances.map(b=><tr key={b.id}><td data-label="Ürün">{b.product.name}</td><td data-label="SKU">{b.product.internalSku??'—'}</td><td data-label="Depo">{b.warehouse.name} · {b.warehouse.code}</td><td data-label="Adet"><strong>{b.quantity}</strong></td><td data-label="Güncelleme">{b.updatedAt.toLocaleString('tr-TR')}</td></tr>)}
       {!balances.length?<tr><td colSpan={5}>Henüz stok kaydı yok.</td></tr>:null}
-    </tbody></table></div></section>
+    </tbody></table></div>
+    <nav className="commerce-pagination" aria-label="Stok sayfaları">
+      <span>{filteredCount.toLocaleString('tr-TR')} bakiye · {page}/{pages}</span>
+      {page>1?<a href={balancePage(page-1)} className="action">← Önceki</a>:null}
+      {page<pages?<a href={balancePage(page+1)} className="action">Sonraki →</a>:null}
+    </nav>
+    </section>
     <section className="card" style={{marginTop:20}}><h2>Son stok hareketleri</h2><div className="store-table-wrap"><table className="store-table"><thead><tr><th>Tarih</th><th>Ürün</th><th>Depo</th><th>Değişim</th><th>Son bakiye</th><th>Gerekçe</th></tr></thead><tbody>
       {movements.map(m=><tr key={m.id}><td data-label="Tarih">{m.createdAt.toLocaleString('tr-TR')}</td><td data-label="Ürün">{m.product.name}</td><td data-label="Depo">{m.warehouse.name}</td><td data-label="Değişim">{m.quantityDelta>0?'+':''}{m.quantityDelta}</td><td data-label="Son bakiye">{m.quantityAfter}</td><td data-label="Gerekçe">{m.reason}</td></tr>)}
       {!movements.length?<tr><td colSpan={6}>Henüz hareket bulunmuyor.</td></tr>:null}
