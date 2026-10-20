@@ -134,7 +134,7 @@ try {
       await auditOverflow(page, route, width);
       if (route==='/dashboard' && width<=640) {
         const gridColumns=await page.locator('.dashboard-module-grid').evaluate((node)=>
-          getComputedStyle(node).gridTemplateColumns.trim().split(/\\s+/).length);
+          getComputedStyle(node).gridTemplateColumns.trim().split(/\s+/).length);
         assert.equal(gridColumns,2,'mobile secondary tools must use a compact native grid');
       }
       await page.screenshot({
