@@ -24,7 +24,7 @@ export default async function InventoryPage({searchParams}:{searchParams:Promise
   const page=clampPage(parsePage(params.page),filteredCount,pageSize);
   const pages=Math.max(1,Math.ceil(filteredCount/pageSize));
   const balancePage=(next:number)=>'/commerce/inventory'+
-    '?'+new URLSearchParams({...lowOnly?{filter:'LOW'}:{},page:String(next)}).toString();
+    '?'+new URLSearchParams(lowOnly?{filter:'LOW',page:String(next)}:{page:String(next)}).toString();
   const balances=balanceWhere?await db.stockBalance.findMany({
     where:balanceWhere,include:{product:{select:{name:true,internalSku:true}},warehouse:{select:{name:true,code:true}}},
     orderBy:[{updatedAt:'desc'},{id:'desc'}],skip:(page-1)*pageSize,take:pageSize,
