@@ -471,3 +471,39 @@ html,body{background:var(--bg);color:var(--text)}
  .inventory-product-selected .action{width:100%}
  .inventory-picker-option{flex-direction:column;gap:3px}
 }
+
+/* Dashboard V3+ — one operational instrument strip, not four floating KPI cards. */
+.dashboard-v3 .dashboard-stat-grid{gap:0;border:1px solid #dfe7f0;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 4px 18px rgba(35,57,84,.035)}
+.dashboard-v3 .dashboard-stat{background:transparent;border:0;border-right:1px solid #e6ecf4;border-radius:0;box-shadow:none;min-height:132px;transition:background .12s ease}
+.dashboard-v3 .dashboard-stat:nth-child(4n){border-right:0}
+.dashboard-v3 .dashboard-stat:hover{transform:none;background:#f4f8fd}
+.dashboard-v3 .dashboard-stat:focus-visible{outline:3px solid #85a8ed;outline-offset:-3px}
+.dashboard-v3 .v3-command-lookup{position:relative;z-index:1;display:grid;gap:8px;max-width:570px;margin-top:19px}
+.dashboard-v3 .v3-command-lookup>label{font-size:11px;letter-spacing:.03em;color:#c5d7ed;font-weight:700}
+.dashboard-v3 .v3-command-lookup>div{display:flex;align-items:stretch;gap:0;min-width:0;padding:4px;background:rgba(5,13,27,.3);border:1px solid #5a7393;border-radius:10px}
+.dashboard-v3 .v3-command-lookup input{flex:1;min-width:0;border:0;padding:10px 12px;background:transparent;color:#fff;font-size:13px;outline:0}
+.dashboard-v3 .v3-command-lookup input::placeholder{color:#9caecc}
+.dashboard-v3 .v3-command-lookup button{display:inline-flex;gap:8px;align-items:center;justify-content:center;min-height:40px;padding:9px 12px;border:0;border-radius:7px;background:#dceaff;color:#153353;font-size:12px;font-weight:780;white-space:nowrap}
+.dashboard-v3 .v3-command-lookup button:hover{background:#fff}
+.dashboard-v3 .v3-command-lookup:focus-within>div{outline:2px solid #afccff;outline-offset:2px}
+@media(max-width:1150px){
+ .dashboard-v3 .dashboard-stat:nth-child(2){border-right:0}
+ .dashboard-v3 .dashboard-stat:nth-child(-n+2){border-bottom:1px solid #e6ecf4}
+}
+@media(min-width:1151px){
+ .dashboard-v3 .dashboard-stat:nth-child(2){border-right:1px solid #e6ecf4}
+}
+@media(max-width:640px){
+ .dashboard-v3 .dashboard-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .dashboard-v3 .dashboard-stat{min-height:104px;padding:13px}
+ .dashboard-v3 .dashboard-stat:nth-child(2n){border-right:0}
+ .dashboard-v3 .dashboard-stat:nth-child(-n+2){border-bottom:1px solid #e6ecf4}
+ .dashboard-v3 .v3-command-lookup>div{flex-direction:column;gap:3px}
+ .dashboard-v3 .v3-command-lookup input{min-height:42px;width:100%}
+ .dashboard-v3 .v3-command-lookup button{width:100%;min-height:44px}
+}
+@media(max-width:350px){
+ .dashboard-v3 .dashboard-stat{padding:11px;gap:5px}
+ .dashboard-v3 .v3-metric-icon{width:29px;height:29px}
+ .dashboard-v3 .dashboard-stat-caption>span:first-child{font-size:11px}
+}

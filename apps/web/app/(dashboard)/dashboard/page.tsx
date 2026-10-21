@@ -25,11 +25,17 @@ export default async function DashboardPage() {
   const auth = await requireUserPage();
   const workspaceId = auth.workspace?.id;
   const days = calendarDays(new Date(), 14);
-  const [stores, products, notifications, dailyProductCounts, connectors, orders, openOrders, stockBalances, recentOrders, orderStatuses, warehouses, lowStockBalances, failedConnections, dailyOrders] = await Promise.all([
+  const [stores, products, notifications, dailyProductTotals, connectors, orders, openOrders, stockBalances, recentOrders, orderStatuses, warehouses, lowStockBalances, failedConnections, dailyOrders] = await Promise.all([
     workspaceId ? db.storeConnector.count({ where: { workspaceId } }) : 0,
     workspaceId ? db.product.count({ where: { workspaceId } }) : 0,
     db.notification.count({ where: { userId: auth.user.id, readAt: null } }),
-    workspaceId ? Promise.all(days.map((day, index) => db.product.count({ where: { workspaceId, createdAt: { gte: day.date, lt: index + 1 < days.length ? days[index + 1].date : new Date(day.date.getTime() + 86400000) } } }))) : days.map(() => 0),
+    workspaceId ? db.$queryRaw<Array<{ day: string; count: number }>>`
+      SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Istanbul', 'YYYY-MM-DD') AS "day",
+             COUNT(*)::integer AS "count"
+      FROM "Product"
+      WHERE "workspaceId" = ${workspaceId} AND "createdAt" >= ${days[0].date}
+      GROUP BY 1 ORDER BY 1
+    ` : [],
     workspaceId ? db.storeConnector.findMany({ where: { workspaceId }, orderBy: { updatedAt: 'desc' }, take: 5,
       select: { id: true, name: true, provider: true, mode: true, enabled: true, lastSyncAt: true, lastValidatedAt: true, lastErrorCode: true } }) : [],
     workspaceId ? db.commerceOrder.count({where:{workspaceId}}) : 0,
@@ -48,7 +54,8 @@ export default async function DashboardPage() {
       GROUP BY 1 ORDER BY 1
     ` : [],
   ]);
-  const totalCreated = dailyProductCounts.reduce((total, value) => total + value, 0);
+  const dailyProductMap = new Map(dailyProductTotals.map(row => [row.day, row.count]));
+  const totalCreated = days.reduce((total, day) => total + (dailyProductMap.get(day.key) ?? 0), 0);
   const dailyOrderMap = new Map(dailyOrders.map(row => [row.day, row.count]));
   const recentOrderTotal = days.reduce((sum, day) => sum + (dailyOrderMap.get(day.key) ?? 0), 0);
   const previousSeven = days.slice(0, 7).reduce((sum, day) => sum + (dailyOrderMap.get(day.key) ?? 0), 0);
@@ -80,6 +87,12 @@ export default async function DashboardPage() {
         <div className="v3-command-kicker"><DashboardIcon name="activity" size={18}/> CANLI VERİ ÖZETİ <span>60 saniyede bir yenilenir</span></div>
         <h2>{openOrders ? openOrders.toLocaleString('tr-TR') + ' sipariş işlem bekliyor' : 'Bekleyen sipariş bulunmuyor'}</h2>
         <p>{openOrders ? 'Sipariş akışındaki bekleyen kayıtları öncelik sırasıyla yönetin.' : 'Yeni sipariş oluştuğunda iş akışında gösterilir.'}</p>
+        <form className="v3-command-lookup" method="get" action="/commerce/products" role="search">
+          <label htmlFor="dashboard-sku-lookup">SKU / barkod ile hızlı ürün bul</label>
+          <div><input id="dashboard-sku-lookup" name="q" type="search" autoComplete="off"
+            minLength={2} maxLength={80} placeholder="SKU, barkod veya ürün adı" enterKeyHint="search"/>
+            <button type="submit">Katalogda bul <DashboardIcon name="arrow" size={16}/></button></div>
+        </form>
         <div className="v3-command-actions">
           <Link href="/commerce/orders?status=OPEN" className="v3-command-primary">Bekleyen siparişleri aç <DashboardIcon name="arrow" size={17}/></Link>
           <Link href="/commerce/inventory?filter=LOW" className="v3-command-secondary">Düşük stokları incele <DashboardIcon name="arrow" size={16}/></Link>
