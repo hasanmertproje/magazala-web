@@ -4,8 +4,8 @@ import { chromium } from 'playwright';
 
 if (process.env.CI !== 'true') throw new Error('BROWSER_ACCEPTANCE_IS_CI_ONLY');
 const base = process.env.APP_URL || 'http://localhost:3000';
-const widths = [320, 375, 390, 430, 768, 1024, 1440];
-const routes = ['/dashboard', '/commerce/orders', '/commerce/inventory', '/admin/workspaces'];
+const widths = [320, 360, 375, 390, 430, 768, 1024, 1440];
+const routes = ['/dashboard', '/commerce/orders', '/commerce/products', '/commerce/inventory', '/admin/workspaces'];
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
 const out = 'test-artifacts/screenshots';
 await mkdir(out, { recursive: true });
@@ -119,6 +119,36 @@ try {
   assert.ok(list.includes('CI-E2E-OLD-'), 'older orders inaccessible on page 2');
   assert.equal(await page.locator('a[href="/commerce/orders"]').count()>0,true);
 
+  // Search both SSR and JSON API with the same exact tenant boundary and page semantics.
+  await page.goto(base+'/commerce/orders?q=CI-E2E-VISIBLE&status=OPEN');
+  assert.equal(await page.locator('#order-search').inputValue(),'CI-E2E-VISIBLE');
+  assert.equal(await page.locator('#order-status-filter').inputValue(),'OPEN');
+  list=await page.locator('.store-table tbody').first().innerText();
+  assert.ok(list.includes('CI-E2E-VISIBLE-ORDER'));
+  assert.ok(!list.includes('CI-E2E-HIDDEN-ORDER'));
+  const searchOrders=await context.request.get(base+'/api/commerce/orders?q=CI-E2E-VISIBLE&status=OPEN');
+  assert.equal(searchOrders.status(),200);
+  assert.equal((await searchOrders.json()).pagination.total,1);
+
+  await page.goto(base+'/commerce/products?q=CI-E2E-CATALOG-055');
+  assert.equal(await page.locator('#product-search').inputValue(),'CI-E2E-CATALOG-055');
+  const productRows=await page.locator('.store-table tbody').innerText();
+  assert.ok(productRows.includes('CI Katalog Ürünü 055'));
+  assert.ok(!productRows.includes('CI Gizli Ürün'));
+  const searchProducts=await context.request.get(base+'/api/commerce/products?q=CI-E2E-CATALOG-055');
+  assert.equal(searchProducts.status(),200);
+  const productData=await searchProducts.json();
+  assert.equal(productData.pagination.total,1);
+  assert.equal(productData.products[0].internalSku,'CI-E2E-CATALOG-055');
+  await page.goto(base+'/commerce/products');
+  assert.equal(await page.locator('a[href="/commerce/products?page=2"]').count(),1);
+  await page.locator('a[href="/commerce/products?page=2"]').click();
+  assert.ok((await page.locator('.store-table tbody').innerText()).includes('CI Katalog Ürünü'));
+  await page.goto(base+'/commerce/products?create=1#new-product');
+  assert.ok(await page.locator('#new-product').evaluate(node=>node.open),
+    'new product action must expand an actual working form');
+  assert.ok(await page.locator('#new-product input[name="name"]').isVisible());
+
   await page.goto(base+'/dashboard');
   await page.locator('.v3-priority[href="/commerce/inventory?filter=LOW"]').click();
   assert.equal(await page.locator('#inventory-filter').inputValue(),'LOW');
@@ -158,7 +188,7 @@ try {
   await assertPanel(regular, 'workspace');
   const forbidden = await context.request.get(base + '/api/admin/models');
   assert.equal(forbidden.status(), 403, 'non-admin must be forbidden by API');
-  console.log('Browser acceptance PASSED: 7 viewports, 4 routes, two roles, full page navigation, back/forward, mobile focus/scroll, tenant isolation.');
+  console.log('Browser acceptance PASSED: 8 viewports, 5 routes, two roles, full page navigation, back/forward, mobile focus/scroll, tenant isolation.');
 } finally {
   await context?.close().catch(() => {});
   await browser.close();

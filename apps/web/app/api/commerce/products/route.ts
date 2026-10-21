@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireUserApi } from '../../../../lib/auth';
 import { db } from '../../../../lib/db';
+import { clampPage, parsePage } from '../../../../lib/order-filters';
+import { parseCommerceSearch, parseProductStatus, productSearchCondition } from '../../../../lib/commerce-search';
 import { assertFeatureEnabled } from '../../../../lib/entitlements';
 import { assertSameOrigin, isHtmlForm, publicRequestUrl } from '../../../../lib/request-security';
 
@@ -14,18 +16,30 @@ const productSchema = z.object({
   currency: z.enum(['TRY', 'USD', 'EUR']).default('TRY'),
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireUserApi();
   if (!auth.ok) return NextResponse.json({ok:false, code:auth.code}, {status:auth.status});
   try { await assertFeatureEnabled(auth.context.workspace.id, auth.context.user.isSuperAdmin, 'commerce.products'); }
   catch { return NextResponse.json({ok:false,code:'FEATURE_DISABLED'}, {status:403}); }
+  const params = new URL(request.url).searchParams;
+  const search = parseCommerceSearch(params.get('q'));
+  const rawStatus = params.get('status');
+  const status = parseProductStatus(rawStatus);
+  if (rawStatus && !status) return NextResponse.json({ok:false,code:'INVALID_PRODUCT_STATUS'}, {status:400});
+  const where = {workspaceId:auth.context.workspace.id,...productSearchCondition(search),...(status ? { status } : {})};
+  // Maintain the API's existing default 100 records per page for older clients.
+  const limit = 100;
+  const total = await db.product.count({where});
+  const pages = Math.max(1,Math.ceil(total/limit));
+  const page = clampPage(parsePage(params.get('page')),total,limit);
   const products = await db.product.findMany({
-    where: { workspaceId:auth.context.workspace.id },
-    select: { id:true,name:true,internalSku:true,status:true,price:true,currency:true,updatedAt:true },
-    orderBy: { updatedAt:'desc' },
-    take: 100,
+    where,
+    select: { id:true,name:true,internalSku:true,internalBarcode:true,status:true,price:true,currency:true,updatedAt:true },
+    orderBy: [{ updatedAt:'desc' },{ id:'desc' }],
+    skip: (page-1)*limit, take:limit,
   });
-  return NextResponse.json({ok:true,products:products.map(p=>({...p,price:p.price?.toString()??null}))});
+  return NextResponse.json({ok:true,products:products.map(p=>({...p,price:p.price?.toString()??null})),
+    pagination:{page,pages,total,limit,hasNext:page<pages}});
 }
 
 export async function POST(request: Request) {

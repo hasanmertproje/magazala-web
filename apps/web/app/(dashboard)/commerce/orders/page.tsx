@@ -1,19 +1,21 @@
 import { requireUserPage } from '../../../../lib/auth';
 import { db } from '../../../../lib/db';
+import { parseCommerceSearch, orderSearchCondition } from '../../../../lib/commerce-search';
 import { ORDER_STATUSES, orderStatusCondition, parseOrderFilter, parsePage, clampPage, orderPageUrl } from '../../../../lib/order-filters';
 
 export const dynamic='force-dynamic';
 const statusLabels:Record<string,string>={NEW:'Yeni',CONFIRMED:'Onaylandı',PACKING:'Hazırlanıyor',SHIPPED:'Kargolandı',DELIVERED:'Teslim edildi',CANCELLED:'İptal'};
 const nextStatuses:Record<string,string[]>={NEW:['CONFIRMED','CANCELLED'],CONFIRMED:['PACKING','CANCELLED'],PACKING:['SHIPPED','CANCELLED'],SHIPPED:['DELIVERED'],DELIVERED:[],CANCELLED:[]};
 
-export default async function OrdersPage({searchParams}:{searchParams:Promise<{notice?:string;error?:string;status?:string;page?:string}>}){
+export default async function OrdersPage({searchParams}:{searchParams:Promise<{notice?:string;error?:string;status?:string;page?:string;q?:string}>}){
  const auth=await requireUserPage();
  const params=await searchParams;
  const workspaceId=auth.workspace?.id;
  const canManage=auth.user.isSuperAdmin||auth.membership?.role==='ADMIN';
  const filter=parseOrderFilter(params.status);
+ const search=parseCommerceSearch(params.q);
  const pageSize=50;
- const where=workspaceId?{workspaceId,...orderStatusCondition(filter)}:null;
+ const where=workspaceId?{workspaceId,...orderStatusCondition(filter),...orderSearchCondition(search)}:null;
  const [filteredTotal,total,pending]=await Promise.all([
    where?db.commerceOrder.count({where}):0,
    workspaceId?db.commerceOrder.count({where:{workspaceId}}):0,
@@ -49,8 +51,20 @@ export default async function OrdersPage({searchParams}:{searchParams:Promise<{n
   </section>:null}
   <section className="card" style={{marginTop:20}}>
    <div className="dashboard-section-heading"><div><h2>Sipariş kayıtları</h2><p>{filteredTotal.toLocaleString('tr-TR')} eşleşen kayıt · Sayfa {page}/{pages} · Her sayfada {pageSize} sipariş</p></div></div>
-   <form method="get" action="/commerce/orders" style={{display:'flex',gap:10,alignItems:'center',marginBottom:16,flexWrap:'wrap'}}>
-    <label htmlFor="order-status-filter">Durum</label><select id="order-status-filter" className="input" name="status" defaultValue={filter??''} style={{maxWidth:230}}><option value="">Tüm durumlar</option><option value="OPEN">İşlem bekleyen (tümü)</option>{ORDER_STATUSES.map(s=><option value={s} key={s}>{statusLabels[s]}</option>)}</select><button className="action" type="submit">Filtrele</button>
+   <nav className="commerce-quick-filters" aria-label="Sipariş iş listeleri">
+    {[{key:'',label:'Tümü'},{key:'OPEN',label:'İşlem bekleyen'},{key:'NEW',label:'Yeni'},{key:'PACKING',label:'Hazırlanan'},{key:'SHIPPED',label:'Kargoda'}].map(item=>
+      <a key={item.key} href={orderPageUrl(parseOrderFilter(item.key),1,search)} className={'commerce-filter-chip'+((filter??'')===item.key?' is-current':'')} aria-current={(filter??'')===item.key?'page':undefined}>{item.label}</a>
+    )}
+   </nav>
+   <form method="get" action="/commerce/orders" className="commerce-query-form" role="search">
+     <label htmlFor="order-search">Sipariş no veya müşteri referansı
+       <input id="order-search" name="q" type="search" className="input" maxLength={80} defaultValue={search} placeholder="Sipariş veya müşteri kodunu ara" autoComplete="off"/>
+     </label>
+     <label htmlFor="order-status-filter">Durum
+       <select id="order-status-filter" className="input" name="status" defaultValue={filter??''}><option value="">Tüm durumlar</option><option value="OPEN">İşlem bekleyen (tümü)</option>{ORDER_STATUSES.map(s=><option value={s} key={s}>{statusLabels[s]}</option>)}</select>
+     </label>
+     <button className="action primary" type="submit">Kayıtları bul</button>
+     {(search||filter)?<a className="action" href="/commerce/orders">Temizle</a>:null}
    </form>
    <div className="store-table-wrap"><table className="store-table"><thead><tr><th>Sipariş</th><th>Kaynak</th><th>Durum</th><th>Tutar</th><th>Oluşturma</th><th>Durum güncelle</th></tr></thead><tbody>
     {orders.map(order=><tr key={order.id}>
@@ -62,12 +76,12 @@ export default async function OrdersPage({searchParams}:{searchParams:Promise<{n
        <select className="input" name="status" aria-label={order.orderNumber+' yeni durum'}>{nextStatuses[order.status].map(s=><option key={s} value={s}>{statusLabels[s]}</option>)}</select>
        <button className="action" type="submit">Güncelle</button></form>:<span style={{color:'var(--muted)'}}>—</span>}</td>
     </tr>)}
-    {!orders.length?<tr><td colSpan={6}>Seçili filtrede sipariş kaydı bulunmuyor.</td></tr>:null}
+    {!orders.length?<tr><td colSpan={6}>Bu arama ve durum seçiminde sipariş yok. Filtreyi temizleyebilir veya başka bir sipariş numarası arayabilirsiniz.</td></tr>:null}
    </tbody></table></div>
    <nav className="commerce-pagination" aria-label="Sipariş sayfaları">
      <span>{filteredTotal.toLocaleString('tr-TR')} kayıt · {page}/{pages}</span>
-     {page>1?<a className="action" href={orderPageUrl(filter,page-1)}>← Önceki</a>:null}
-     {page<pages?<a className="action" href={orderPageUrl(filter,page+1)}>Sonraki →</a>:null}
+     {page>1?<a className="action" href={orderPageUrl(filter,page-1,search)}>← Önceki</a>:null}
+     {page<pages?<a className="action" href={orderPageUrl(filter,page+1,search)}>Sonraki →</a>:null}
    </nav>
   </section>
  </div>;

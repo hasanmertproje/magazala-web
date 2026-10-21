@@ -400,3 +400,44 @@ html,body{background:var(--bg);color:var(--text)}
  .dashboard-v3 .dashboard-module{padding:12px;min-height:118px}
  .dashboard-v3 .dashboard-module h3{font-size:13px}
 }
+
+/* Commerce workbench — route-scoped, progressively enhanced; no added runtime dependencies. */
+.commerce-operations-page .dashboard-heading{margin-bottom:19px}
+.commerce-operations-page .dashboard-heading>.action{min-height:44px}
+.commerce-records{margin-top:20px}
+.commerce-records .dashboard-section-heading{margin-bottom:14px}
+.commerce-query-form{display:grid;grid-template-columns:minmax(220px,2fr) minmax(170px,1fr) auto auto;gap:10px;align-items:end;margin:0 0 18px;padding:15px;border-radius:12px;border:1px solid var(--line);background:#f7f9fc}
+.commerce-query-form label{min-width:0;display:grid;gap:7px;color:var(--muted);font-size:12px;font-weight:700}
+.commerce-query-form .input{min-width:0;min-height:44px}
+.commerce-query-form .action{min-height:44px;white-space:nowrap}
+.commerce-quick-filters{display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:thin;padding:3px 1px 12px;margin-top:12px}
+.commerce-filter-chip{display:inline-flex;align-items:center;justify-content:center;flex:none;min-height:42px;padding:9px 12px;font-size:12px;font-weight:700;border:1px solid var(--line);border-radius:8px;background:#fff;color:#586a82}
+.commerce-filter-chip.is-current{color:#214b95;background:#edf3ff;border-color:#bbd0ef}
+.commerce-filter-chip:focus-visible,.commerce-disclosure summary:focus-visible{outline:3px solid #85a8ed;outline-offset:2px}
+.commerce-disclosure{margin-top:20px;scroll-margin-top:95px}
+.commerce-disclosure>summary{cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;list-style:none;min-height:46px}
+.commerce-disclosure>summary::-webkit-details-marker{display:none}
+.commerce-disclosure>summary strong,.commerce-disclosure>summary small{display:block}
+.commerce-disclosure>summary strong{color:var(--text);font-size:15px}
+.commerce-disclosure>summary small{color:var(--muted);font-size:12px;margin-top:5px}
+.commerce-disclosure>summary>span:last-child{font-size:23px;color:var(--accent);line-height:1}
+.commerce-disclosure[open]>summary>span:last-child{transform:rotate(45deg)}
+.commerce-disclosure .commerce-product-form{margin-top:20px;border-top:1px solid var(--line);padding-top:20px}
+.commerce-records .store-table{min-width:660px}
+@media(max-width:850px){
+ .commerce-query-form{grid-template-columns:minmax(0,1fr) minmax(0,.85fr)}
+ .commerce-query-form .action{width:100%}
+}
+@media(max-width:640px){
+ .commerce-operations-page .dashboard-heading{align-items:flex-start}
+ .commerce-operations-page .dashboard-heading>.action{width:100%}
+ .commerce-query-form{grid-template-columns:minmax(0,1fr);padding:12px}
+ .commerce-query-form label{width:100%}
+ .commerce-quick-filters{margin-right:-10px;padding-right:12px}
+ .commerce-records{padding:14px}
+ .commerce-records .store-table{min-width:0;width:100%;display:block}
+ .commerce-records .store-table tbody tr{padding:8px 12px;border-left:3px solid #d6e2f4}
+ .commerce-records .store-table tbody td:first-child{font-size:14px}
+ .commerce-records .store-table tbody td:first-child strong{overflow-wrap:anywhere}
+ .commerce-records .commerce-pagination{gap:8px}
+}

@@ -70,7 +70,20 @@ try {
       update:{quantity},
     });
   }
-  console.log('CI browser fixtures created (two roles, two isolated tenants).');
+  // Exercise product paging beyond the first 50 and avoid synthetic customer data.
+  await db.product.createMany({
+    data:Array.from({length:55},(_,i)=>({
+      workspaceId,internalSku:'CI-E2E-CATALOG-'+String(i+1).padStart(3,'0'),
+      name:'CI Katalog Ürünü '+String(i+1).padStart(3,'0'),status:'DRAFT',
+    })),
+    skipDuplicates:true,
+  });
+  await db.product.upsert({
+    where:{workspaceId_internalSku:{workspaceId:isolated.id,internalSku:'CI-HIDDEN-PRODUCT'}},
+    create:{workspaceId:isolated.id,internalSku:'CI-HIDDEN-PRODUCT',name:'CI Gizli Ürün'},
+    update:{},
+  });
+  console.log('CI browser fixtures created (two roles, two isolated tenants, paginated catalog).');
 } finally {
   await db.$disconnect();
 }
