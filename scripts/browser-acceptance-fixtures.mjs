@@ -83,7 +83,14 @@ try {
     create:{workspaceId:isolated.id,internalSku:'CI-HIDDEN-PRODUCT',name:'CI Gizli Ürün'},
     update:{},
   });
-  console.log('CI browser fixtures created (two roles, two isolated tenants, paginated catalog).');
+  // Source records are MOCK-only; none can connect or call a live marketplace.
+  await db.storeConnector.createMany({
+    data:Array.from({length:34},(_,i)=>({
+      workspaceId,name:'CI-STORE-MOCK-'+String(i+1).padStart(3,'0'),
+      provider:'demo',mode:'MOCK',enabled:false,
+    })),
+  });
+  console.log('CI browser fixtures created (two roles, two isolated tenants, paginated catalog and connectors).');
 } finally {
   await db.$disconnect();
 }
