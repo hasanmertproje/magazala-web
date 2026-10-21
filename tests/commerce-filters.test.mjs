@@ -4,9 +4,14 @@ import { readFile } from 'node:fs/promises';
 import ts from 'typescript';
 
 const source=await readFile(new URL('../apps/web/lib/order-filters.ts',import.meta.url),'utf8');
-const compiled=ts.transpileModule(source,{
+const commerceSource=await readFile(new URL('../apps/web/lib/commerce-search.ts',import.meta.url),'utf8');
+const commerceCompiled=ts.transpileModule(commerceSource,{
   compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}
 }).outputText;
+const commerceUri='data:text/javascript;base64,'+Buffer.from(commerceCompiled).toString('base64');
+const compiled=ts.transpileModule(source,{
+  compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}
+}).outputText.replace("from './commerce-search'", "from '"+commerceUri+"'");
 const {
   parseOrderFilter, orderStatusCondition, parsePage, clampPage, orderPageUrl,
 }=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64'));
@@ -30,4 +35,5 @@ test('bounded pages are strict and URLs preserve selected status',()=>{
   assert.equal(clampPage(1,0,50),1);
   assert.equal(orderPageUrl('OPEN',2),'/commerce/orders?status=OPEN&page=2');
   assert.equal(orderPageUrl(undefined,1),'/commerce/orders');
+  assert.equal(orderPageUrl('OPEN',2,'ref 10'),'/commerce/orders?status=OPEN&q=ref+10&page=2');
 });

@@ -9,7 +9,7 @@ const PAGE_SIZE = 50;
 const labels: Record<string, string> = { DRAFT:'Taslak', ACTIVE:'Aktif', ARCHIVED:'Arşivlendi' };
 
 export default async function ProductsPage({ searchParams }: {
-  searchParams: Promise<{ notice?: string; error?: string; q?: string; status?: string; page?: string }>;
+  searchParams: Promise<{ notice?: string; error?: string; q?: string; status?: string; page?: string; create?: string }>;
 }) {
   const auth = await requireUserPage();
   if (!auth.workspace) return <div className="content"><h1 className="page-title">Çalışma alanı bulunamadı</h1></div>;
@@ -43,7 +43,7 @@ export default async function ProductsPage({ searchParams }: {
         <h1 className="page-title" style={{ marginTop:12 }}>Ürün Kataloğu</h1>
         <p className="page-subtitle">SKU ve barkod bazlı iç ürün kayıtları. Pazaryeri yayınlama ve senkronizasyon henüz etkin değildir.</p>
       </div>
-      <a className="action primary" href="#new-product">Yeni ürün kaydı</a>
+      <a className="action primary" href="/commerce/products?create=1#new-product">Yeni ürün kaydı</a>
     </div>
     {params.notice ? <p role="status" className="card">Ürün kaydı oluşturuldu.</p> : null}
     {params.error ? <p role="alert" className="card" style={{color:'var(--danger)'}}>İşlem tamamlanamadı: {params.error}</p> : null}
@@ -85,7 +85,7 @@ export default async function ProductsPage({ searchParams }: {
           {page < pages ? <a className="action" href={pageLink(page+1)}>Sonraki →</a> : null}
         </nav>
       </section>
-      <details id="new-product" className="card commerce-disclosure">
+      <details id="new-product" className="card commerce-disclosure" open={params.create === '1'}>
         <summary><span><strong>Yeni taslak ürün oluştur</strong><small>Kaydetmeden önce ad, SKU ve fiyat bilgilerini girin</small></span><span aria-hidden="true">+</span></summary>
         <form action="/api/commerce/products" method="post" className="commerce-product-form">
           <label>Ürün adı<input className="input" name="name" required minLength={2} maxLength={180}/></label>
