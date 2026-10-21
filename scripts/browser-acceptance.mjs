@@ -180,6 +180,8 @@ try {
   assert.ok((await page.locator('.store-table tbody').innerText()).includes('CI-STORE-MOCK-034'));
   assert.equal(await page.locator('.store-table tbody .connection-simulated').count(),1);
   await page.goto(base+'/commerce/stores');
+  assert.equal(await page.locator('table.store-table tbody tr').count(),15,
+    'mobile connector worklist must be bounded to a usable 15 records per page');
   assert.equal(await page.locator('a[href="/commerce/stores?page=2"]').count(),1);
   await page.locator('a[href="/commerce/stores?page=2"]').click();
   assert.ok((await page.locator('.store-table tbody').innerText()).includes('CI-STORE-MOCK-'));
