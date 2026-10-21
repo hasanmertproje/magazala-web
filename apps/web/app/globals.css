@@ -441,3 +441,33 @@ html,body{background:var(--bg);color:var(--text)}
  .commerce-records .store-table tbody td:first-child strong{overflow-wrap:anywhere}
  .commerce-records .commerce-pagination{gap:8px}
 }
+
+/* Stock operator workflow: SKU-first lookup instead of an arbitrarily truncated select. */
+.inventory-head-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.inventory-head-actions .action{min-height:44px}
+.inventory-product-picker{display:grid;gap:7px;min-width:0}
+.inventory-product-picker>label{color:var(--muted);font-size:13px;font-weight:650}
+.inventory-product-picker>input.input{min-height:44px}
+.inventory-picker-help{font-size:11px;line-height:1.5;color:var(--muted)}
+.inventory-picker-results{display:grid;gap:0;background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;max-height:300px;overflow-y:auto;overscroll-behavior:contain}
+.inventory-picker-option{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-height:48px;padding:11px 12px;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--text)}
+.inventory-picker-option:last-of-type{border-bottom:0}
+.inventory-picker-option:hover,.inventory-picker-option.is-active{background:#eef4ff}
+.inventory-picker-option:focus-visible{outline:3px solid #85a8ed;outline-offset:-3px}
+.inventory-picker-option span{min-width:0;font-size:12px;font-weight:700;overflow-wrap:anywhere}
+.inventory-picker-option small{color:var(--muted);font-size:11px;flex-shrink:0;overflow-wrap:anywhere}
+.inventory-picker-overflow{padding:11px;color:var(--muted);font-size:11px}
+.inventory-product-selected{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid #c8e2d8;background:#effaf3;border-radius:9px;padding:8px 11px;font-size:12px}
+.inventory-product-selected>span{min-width:0;overflow-wrap:anywhere}
+.inventory-product-selected .action{min-height:40px;flex-shrink:0}
+@media(max-width:640px){
+ .inventory-head-actions{align-items:stretch;width:100%}
+ .inventory-head-actions .action{flex:1;justify-content:center}
+ .inventory-task-layout{display:flex;flex-direction:column;gap:12px}
+ .inventory-task-layout>.inventory-balance-workbench{order:0;margin-top:0!important}
+ .inventory-task-layout>.inventory-grid{order:1;margin-top:0}
+ .inventory-task-layout>.inventory-movements-workbench{order:2;margin-top:0!important}
+ .inventory-product-selected{flex-wrap:wrap}
+ .inventory-product-selected .action{width:100%}
+ .inventory-picker-option{flex-direction:column;gap:3px}
+}

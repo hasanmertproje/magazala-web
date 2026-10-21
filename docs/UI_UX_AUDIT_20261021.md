@@ -28,3 +28,8 @@
 - Existing CSS contains redundant historical overrides; remove only with browser screenshot diff evidence.
 - Accessibility, visual quality, real device touch, browser performance and production smoke require real Chromium verification, not only static tests.
 - No migration, external service, dependency, irreversible write or customer data alteration in this PR.
+
+## M5 follow-up: Inventory SKU-first product selection
+The inventory adjustment form formerly materialized only the first 500 products in an unrestricted dropdown. It now queries the existing authenticated, workspace-scoped product API by name/SKU/barcode, requiring explicit selection with a stable internal product ID. Client lookups are debounced and abortable; keyboard ArrowUp/ArrowDown/Enter/Escape and ARIA combobox/listbox semantics are included. No direct stock write occurs on selection; only the existing privileged server-side adjustment endpoint commits stock changes with its existing idempotency key.
+
+At narrow widths, actual stock balances are shown before creation/adjustment forms, with a direct LOW-stock drilldown from the page heading. Tests exercise a CI-only real product selection. Remaining: real device/IME screen-reader review, server load measurement at six-figure catalogs, and deeper query index analysis.
