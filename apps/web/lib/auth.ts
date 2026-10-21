@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { db } from './db';
+import { isDemoWorkspace } from './demo-mode';
 import { ACTIVE_WORKSPACE_COOKIE, SESSION_COOKIE, verifySessionToken } from './session';
 
 export async function getAuthContext() {
@@ -45,6 +46,16 @@ export async function requireUserApi() {
   if (!context) return { ok: false as const, status: 401, code: 'AUTH_REQUIRED' };
   if (!context.workspace) return { ok: false as const, status: 409, code: 'WORKSPACE_REQUIRED' };
   return { ok: true as const, context: { ...context, workspace: context.workspace } };
+}
+
+/** Reject demo provider requests before quota reservation and user data writes. */
+export async function requireExternalProviderApi() {
+  const auth = await requireUserApi();
+  if (!auth.ok) return auth;
+  if (isDemoWorkspace(auth.context.workspace)) {
+    return { ok: false as const, status: 403, code: 'DEMO_EXTERNAL_OPERATION_DISABLED' };
+  }
+  return auth;
 }
 
 export async function requireSuperAdminApi() {
