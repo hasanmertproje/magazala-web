@@ -1,3 +1,5 @@
+import { commercePageUrl } from './commerce-search';
+
 /** Shared URL filters used by both the order page and its JSON API. */
 export const ORDER_STATUSES = ['NEW', 'CONFIRMED', 'PACKING', 'SHIPPED', 'DELIVERED', 'CANCELLED'] as const;
 type Status = (typeof ORDER_STATUSES)[number];
@@ -26,10 +28,6 @@ export function clampPage(page: number, total: number, pageSize: number): number
   return Math.min(page, Math.max(1, Math.ceil(total / pageSize)));
 }
 
-export function orderPageUrl(filter: OrderFilter, page: number): string {
-  const params = new URLSearchParams();
-  if (filter) params.set('status', filter);
-  if (page > 1) params.set('page', String(page));
-  const query = params.toString();
-  return '/commerce/orders' + (query ? '?' + query : '');
+export function orderPageUrl(filter: OrderFilter, page: number, search = ''): string {
+  return commercePageUrl('/commerce/orders', page, { status: filter, q: search });
 }

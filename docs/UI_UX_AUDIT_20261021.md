@@ -1,0 +1,30 @@
+# EntegrePilot — Commerce UI/UX audit and focused remediation (2026-10-21)
+
+## Verified baseline
+- Production main before change: db5c331fb52560032c99e8b0b2e504e9a18a2d48; PR #37–#44 merged and Railway SUCCESS.
+- UI: Next.js 16/React 19, server-rendered App Router pages, app-specific globals.css design vocabulary, bespoke DashboardIcon and route-specific SVGs. No separate MUI, Bootstrap, chart or table runtime library in apps/web/package.json.
+- Browser CI exercises real auth, shell isolation and seven widths: 320/375/390/430/768/1024/1440.
+- **Current risks:** repeated :root CSS token overrides, display-dense KPI containers outside Dashboard V3, historic product listings silently clipped at 100 rows, orders lack lookup by number/reference, inventory stock correction product dropdown clipped at 500 rows, integrated marketplace sync not live.
+
+## Reference and license decision
+| Reference | Assessment |
+| --- | --- |
+| Vuexy MUI Next.js | Paid and license-tiered; visual/functional inspiration only. Do not copy or bundle. |
+| Materio MUI Next.js Free | Repository MIT licensed, but documentation requests attribution. MUI/Tailwind would duplicate current styling and increase migration risk; no code adopted. |
+| OrbynAdmin | MIT licensed Next.js example; includes 70+ demo-only screens, shallow commit history. IA inspiration only, no import. |
+| Tabler | MIT framework; Bootstrap and bundled third-party dependencies need separate compliance. ApexCharts v5 has a separate dual-license. Do not add runtime. |
+| TanStack Table | MIT headless tables; not needed for the current 50-row SSR pages. Re-evaluate if column virtualization or client interactivity proves necessary. |
+| Modular Studio | Exact referenced asset and applicable license not verified; no code imported or claims made. |
+
+## Shipped in this PR
+1. **Catalog recovery:** searchable SKU/barcode/name, draft/active filtering, deterministic 50-row server pagination and real totals; same rules in JSON API with backward-compatible 100/page.
+2. **Order handling:** direct OPEN/NEW/PACKING/SHIPPED filters, search by internal order no/customer reference with API parity and shareable URL filters.
+3. **Mobile task hierarchy:** searchable lists and distinct quick filters precede secondary catalog creation; native disclosure removes large distracting data-entry form until needed; dedicated compact query/filter controls and table field labels.
+4. **Regression coverage:** bounded input, query predicates, deep-link navigation and consistent API/page scope. Server-side search remains scoped to authenticated workspace.
+
+## Remaining work and acceptance constraints
+- Inventory correction dropdown fixed 500 product limit needs a scalable SKU-first picker/server-backed search.
+- True product variant / marketplace mappings, provider sync, returns and payments are not implemented; do not fabricate.
+- Existing CSS contains redundant historical overrides; remove only with browser screenshot diff evidence.
+- Accessibility, visual quality, real device touch, browser performance and production smoke require real Chromium verification, not only static tests.
+- No migration, external service, dependency, irreversible write or customer data alteration in this PR.

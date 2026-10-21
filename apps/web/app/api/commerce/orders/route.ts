@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireUserApi } from '../../../../lib/auth';
 import { db } from '../../../../lib/db';
+import { parseCommerceSearch, orderSearchCondition } from '../../../../lib/commerce-search';
 import { orderStatusCondition, parseOrderFilter, parsePage, clampPage } from '../../../../lib/order-filters';
 import { assertFeatureEnabled } from '../../../../lib/entitlements';
 import { assertSameOrigin, isHtmlForm, publicRequestUrl } from '../../../../lib/request-security';
@@ -23,7 +24,8 @@ export async function GET(request: Request) {
   const rawStatus=params.get('status');
   const filter=parseOrderFilter(rawStatus);
   if(rawStatus && !filter)return NextResponse.json({ok:false,code:'INVALID_ORDER_FILTER'},{status:400});
-  const where={workspaceId:auth.context.workspace.id,...orderStatusCondition(filter)};
+  const search=parseCommerceSearch(params.get('q'));
+  const where={workspaceId:auth.context.workspace.id,...orderStatusCondition(filter),...orderSearchCondition(search)};
   // Preserve the historical 100-row API page size for existing clients.
   const limit=100;
   const total=await db.commerceOrder.count({where});
