@@ -40,3 +40,9 @@ At narrow widths, actual stock balances are shown before creation/adjustment for
 - Four floating metrics are rendered as one continuous instrument strip, with partition lines, keyboard focus and 2-column mobile reflow. This is scoped to `.dashboard-v3` and leaves admin and internal commerce metrics untouched.
 - The former 14 independent per-day `Product.count()` calls become **one** PostgreSQL Istanbul-day aggregate, with a tenant boundary and the same day semantics as the existing order chart; a CI integration transaction verifies timezone grouping and cross-tenant exclusion.
 - Required acceptance: full Next production build, query integration tests, eight-viewport Chromium overflow and dashboard lookup navigation. Only post-test claims are valid; human visual and touch audit still pending.
+
+## M5 integration UX: honest connector status and bounded listing
+- Connector record table is now 30/page, ordered deterministically. Filter by credential status (mock/error/verified/unverified) and name/provider; server-side tenant-scoped search. True counts are independent of the current page.
+- Header distinguishes **credential verification** from real marketplace data sync. MOCK records can never be labeled verified, and no fake retry/synchronization action exists. The only active existing action is credential verification for Trendyol, with role-based access.
+- Mobile field-labelled records and filter strips reuse established EntegrePilot components rather than importing a paid template. Creation is behind a real native disclosure, openable by deep link.
+- PostgreSQL test data creates 34 MOCK connections in CI only; Chromium verifies search and paginated access. Real provider sandbox integration, sync history storage and queue retries remain separate unimplemented work.
