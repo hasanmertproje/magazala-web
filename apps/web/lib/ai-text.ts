@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { TASARLAYALIM_AI_SYSTEM_PROMPT } from '@magazala/core';
 import { db } from './db';
+import { assertDemoExternalOperationAllowed } from './demo-mode';
 import { revealProviderSecret } from './provider-credentials';
 import { supportsTextRuntime } from './provider-runtime';
 
@@ -196,6 +197,10 @@ function safeErrorCode(error: unknown): string {
 }
 
 export async function generateProviderBackedText(input: GenerateTextInput) {
+  // Defense in depth: do not load or decrypt provider credentials for demo workspaces.
+  const workspace = await db.workspace.findUnique({ where: { id: input.workspaceId }, select: { slug: true } });
+  if (!workspace) throw new Error('WORKSPACE_NOT_FOUND');
+  assertDemoExternalOperationAllowed(workspace);
   const candidates = await loadCandidates();
   if (candidates.length === 0) throw new Error('AI_MODEL_NOT_CONFIGURED');
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireUserApi } from '../../../../lib/auth';
+import { requireExternalProviderApi } from '../../../../lib/auth';
 import { db } from '../../../../lib/db';
 import { reserveFeatureUse, releaseFeatureUse, type FeatureReservation } from '../../../../lib/entitlements';
 import { assertSameOrigin } from '../../../../lib/request-security';
@@ -23,7 +23,7 @@ function parseJson(text: string) {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireUserApi();
+  const auth = await requireExternalProviderApi();
   if (!auth.ok) return NextResponse.json({ ok: false, code: auth.code }, { status: auth.status });
   let reservation: FeatureReservation | null = null;
   try {

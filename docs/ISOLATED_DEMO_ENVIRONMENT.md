@@ -31,3 +31,9 @@ Seed, mevcut `Workspace`, `Product`, `StockBalance`, `CommerceOrder`, `StoreConn
 CI, aynı kodu **ayrı, geçici PostgreSQL veritabanında** iki kez çalıştırarak idempotence, tenant sınırı, demo dışı kullanıcı varsa reddetme, mock bağlantıları ve premium özelliklerin PREVIEW dışı olmasını denetler. Test sonunda geçici veritabanı silinir.
 
 **Önemli:** Bu PR demo hesabını production veritabanına eklemez ve herkese açık bir demo URL'si oluşturmaz. Gerçek demo ortamı ancak ayrı Railway kaynakları tanımlanıp seed o ortamda çalıştırıldığında erişilebilir olacaktır. Tarayıcı kabul testleri ayrıca gerekir.
+
+## Dış sağlayıcı erişim güvenliği (2026-10-21)
+
+Demo paket hakları gerçek AI kredisi harcama veya dış arama isteği yapma izni değildir. Demo çalışma alanı için Design Studio üretimi, Product Intelligence IDEA/RESEARCH ve gereksinim asistanı konuşma/analizi istekleri, kota rezerve edilmeden veya mesaj yazılmadan önce HTTP 403 ve `DEMO_EXTERNAL_OPERATION_DISABLED` ile reddedilir. Merkezi metin/görsel sağlayıcı servisleri de workspace kimliğini veritabanından tekrar okuyarak sağlayıcı kimlik bilgilerine erişmeden önce aynı kuralı uygular.
+
+Bu işlemleri çalışan demo özellikleri olarak tanıtmayın. Ücretli AI kullanımı için ayrıca yetkilendirilmiş ve bütçesi sınırlı bir sandbox modeli tasarlanmalıdır. Demo ürün/sipariş/stok inceleme özellikleri etkilenmez. Bu yama ayrı Railway demo veritabanı oluşturmaz veya canlı demo giriş akışının test edildiği anlamına gelmez.

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { requireUserApi } from '../../../../lib/auth';
+import { requireExternalProviderApi } from '../../../../lib/auth';
 import { db } from '../../../../lib/db';
 import { reserveFeatureUse, releaseFeatureUse, type FeatureReservation } from '../../../../lib/entitlements';
 import { assertSameOrigin } from '../../../../lib/request-security';
@@ -11,7 +11,7 @@ const responseSchema = z.object({ ideas: z.array(z.object({ title: z.string().tr
 function parseJson(text: string) { const cleaned = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, ''); return responseSchema.parse(JSON.parse(cleaned)); }
 
 export async function POST(request: Request) {
-  const auth = await requireUserApi();
+  const auth = await requireExternalProviderApi();
   if (!auth.ok) return NextResponse.json({ ok: false, code: auth.code }, { status: auth.status });
   let reservation: FeatureReservation | null = null;
   try {

@@ -2,6 +2,7 @@ import { InferenceClient } from '@huggingface/inference';
 import { routeModel, type ProviderHealthStatus, type QualityProfile, type RouteCandidate } from '@magazala/core';
 import { randomUUID } from 'node:crypto';
 import { db } from './db';
+import { assertDemoExternalOperationAllowed } from './demo-mode';
 import { assertParentGeneration, attachGenerationLineage } from './design-lineage';
 import { revealProviderSecret } from './provider-credentials';
 import { detectImageDimensions, detectImageMime, readPrivateObject, storeGeneratedImage } from './object-storage';
@@ -111,6 +112,10 @@ async function invokeImageProvider(row:ImageModelRow,secret:string,input:ImageIn
 }
 
 export async function generateAndStoreImage(input:ImageInput){
+  // No billable generation, storage writes or external calls for a demo workspace.
+  const workspace = await db.workspace.findUnique({ where: { id: input.workspaceId }, select: { slug: true } });
+  if (!workspace) throw new Error('WORKSPACE_NOT_FOUND');
+  assertDemoExternalOperationAllowed(workspace);
   const parent=await assertParentGeneration(input.workspaceId,input.parentGenerationId);
   const effectiveProjectId=input.projectId??parent?.projectId??undefined;
   if(effectiveProjectId&&!await db.project.findFirst({where:{id:effectiveProjectId,workspaceId:input.workspaceId},select:{id:true}}))throw new Error('PROJECT_NOT_FOUND');

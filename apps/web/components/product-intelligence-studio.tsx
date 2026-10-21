@@ -11,6 +11,7 @@ type SavedSession = { id:string; mode:'IDEA'|'RESEARCH'; query:string; projectId
 type PersistedSession = { id:string; mode:'IDEA'|'RESEARCH'; query:string; projectId:string|null; createdAt:string; sources:Source[]; opportunities:Opportunity[]; evidencePolicy:EvidencePolicy|null };
 
 const errorLabels: Record<string,string> = {
+  DEMO_EXTERNAL_OPERATION_DISABLED: 'Demo ortamında dış yapay zekâ ve web araştırma servislerine çağrı yapılamaz; işlem simüle edilmiş gibi gösterilmez.',
   AI_MODEL_NOT_CONFIGURED: 'Fikir üretimi için etkin bir metin modeli yapılandırılmamış.',
   AI_TEXT_ADAPTER_NOT_CONFIGURED: 'Etkin model için desteklenen metin sağlayıcı adaptörü bulunmuyor.',
   AI_PROVIDER_UNAVAILABLE: 'Yapılandırılmış yapay zekâ sağlayıcıları şu anda yanıt vermiyor.',
