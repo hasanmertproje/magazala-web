@@ -49,3 +49,6 @@ At narrow widths, actual stock balances are shown before creation/adjustment for
 
 ## Screenshot-driven M7 remediation: order worklist density
 Human review of archived real Chromium screenshots showed 390px Orders ~15,452px tall with the manual intake form preceding the worklist; the Products page was ~13,481px tall due 50 mobile record cards. New changes place the actual order queue first, replace four oversized KPI cards (including a pseudo-metric 'Manual / Test') with a real-data compact strip and put manual creation into an accessible, deep-linkable native disclosure below the queue. SSR Orders pagination is 20/page, SSR Products 24/page, their JSON APIs keep the established 100/page default. Status transitions and source identifiers stay intact. Chromium verifies the creation disclosure on direct link; manual visual/touch acceptance remains an independent gate.
+
+## Screenshot-driven connector density fix (390px)
+The full-height Chromium screenshot of the 30-record mobile connector page was 11,287px. Reduce to 15 records/page without hiding credentials status, last sync, error explanation or actions; preserve server-side filters, stable order, tenant scoping and page navigation. Chromium acceptance asserts exactly 15 visible records for the disposable 34-connector fixture. This change does not claim human visual acceptance of every state.

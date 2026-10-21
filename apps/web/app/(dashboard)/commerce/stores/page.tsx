@@ -7,7 +7,7 @@ import { parseCommerceSearch } from '../../../../lib/commerce-search';
 import { connectorCredentialState, connectorPageUrl, parseConnectorFilter } from '../../../../lib/connector-filters';
 
 export const dynamic = 'force-dynamic';
-const PAGE_SIZE=30;
+const PAGE_SIZE=15;
 
 export default async function StoresPage({searchParams}:{searchParams:Promise<{notice?:string;error?:string;q?:string;status?:string;page?:string;create?:string}>}) {
   const auth=await requireUserPage();
