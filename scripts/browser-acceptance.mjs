@@ -152,10 +152,10 @@ try {
   // A product beyond the former 500-result dropdown cap can be selected by SKU.
   await page.goto(base+'/commerce/inventory');
   const lookup=page.getByRole('combobox',{name:'Ürün ara ve seç'});
-  await lookup.fill('CI-E2E-CATALOG-055');
-  await page.getByRole('option',{name:/CI Katalog Ürünü 055/}).click();
+  await lookup.fill('CI-E2E-CATALOG-505');
+  await page.getByRole('option',{name:/CI Katalog Ürünü 505/}).click();
   assert.notEqual(await page.locator('input[name="productId"]').inputValue(),'');
-  assert.ok((await page.locator('.inventory-product-selected').innerText()).includes('CI Katalog Ürünü 055'));
+  assert.ok((await page.locator('.inventory-product-selected').innerText()).includes('CI Katalog Ürünü 505'));
   await page.getByRole('button',{name:'Değiştir'}).click();
   assert.equal(await page.locator('input[name="productId"]').inputValue(),'');
 

@@ -72,7 +72,7 @@ try {
   }
   // Exercise product paging beyond the first 50 and avoid synthetic customer data.
   await db.product.createMany({
-    data:Array.from({length:55},(_,i)=>({
+    data:Array.from({length:505},(_,i)=>({
       workspaceId,internalSku:'CI-E2E-CATALOG-'+String(i+1).padStart(3,'0'),
       name:'CI Katalog Ürünü '+String(i+1).padStart(3,'0'),status:'DRAFT',
     })),
