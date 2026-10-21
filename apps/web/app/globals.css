@@ -435,6 +435,7 @@ html,body{background:var(--bg);color:var(--text)}
  .commerce-query-form label{width:100%}
  .commerce-quick-filters{margin-right:-10px;padding-right:12px}
  .commerce-records{padding:14px}
+ .commerce-records .store-table{min-width:0;width:100%;display:block}
  .commerce-records .store-table tbody tr{padding:8px 12px;border-left:3px solid #d6e2f4}
  .commerce-records .store-table tbody td:first-child{font-size:14px}
  .commerce-records .store-table tbody td:first-child strong{overflow-wrap:anywhere}
