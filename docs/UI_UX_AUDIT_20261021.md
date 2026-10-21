@@ -33,3 +33,10 @@
 The inventory adjustment form formerly materialized only the first 500 products in an unrestricted dropdown. It now queries the existing authenticated, workspace-scoped product API by name/SKU/barcode, requiring explicit selection with a stable internal product ID. Client lookups are debounced and abortable; keyboard ArrowUp/ArrowDown/Enter/Escape and ARIA combobox/listbox semantics are included. No direct stock write occurs on selection; only the existing privileged server-side adjustment endpoint commits stock changes with its existing idempotency key.
 
 At narrow widths, actual stock balances are shown before creation/adjustment forms, with a direct LOW-stock drilldown from the page heading. Tests exercise a CI-only real product selection. Remaining: real device/IME screen-reader review, server load measurement at six-figure catalogs, and deeper query index analysis.
+
+## M6/M8 dashboard: actionable lookup, cohesion and query efficiency
+
+- Dashboard V3's operations hero gains a real SKU/barcode/product lookup that deep-links to tenant-scoped searchable catalog records; it never simulates a scan or submits an external marketplace action.
+- Four floating metrics are rendered as one continuous instrument strip, with partition lines, keyboard focus and 2-column mobile reflow. This is scoped to `.dashboard-v3` and leaves admin and internal commerce metrics untouched.
+- The former 14 independent per-day `Product.count()` calls become **one** PostgreSQL Istanbul-day aggregate, with a tenant boundary and the same day semantics as the existing order chart; a CI integration transaction verifies timezone grouping and cross-tenant exclusion.
+- Required acceptance: full Next production build, query integration tests, eight-viewport Chromium overflow and dashboard lookup navigation. Only post-test claims are valid; human visual and touch audit still pending.

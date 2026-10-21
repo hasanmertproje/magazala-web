@@ -130,6 +130,13 @@ try {
   assert.equal(searchOrders.status(),200);
   assert.equal((await searchOrders.json()).pagination.total,1);
 
+  // Operational dashboard barcode/SKU shortcut routes to actual catalog search.
+  await page.goto(base+'/dashboard');
+  await page.locator('#dashboard-sku-lookup').fill('CI-E2E-CATALOG-055');
+  await page.getByRole('button',{name:/Katalogda bul/}).click();
+  await page.waitForURL(/\/commerce\/products\?q=CI-E2E-CATALOG-055/);
+  assert.ok((await page.locator('.store-table tbody').innerText()).includes('CI Katalog Ürünü 055'));
+
   await page.goto(base+'/commerce/products?q=CI-E2E-CATALOG-055');
   assert.equal(await page.locator('#product-search').inputValue(),'CI-E2E-CATALOG-055');
   const productRows=await page.locator('.store-table tbody').innerText();

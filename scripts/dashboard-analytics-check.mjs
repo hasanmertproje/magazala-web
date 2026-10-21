@@ -19,6 +19,21 @@ try {
         { workspaceId: b.id, orderNumber: 'CI-3', createdAt: new Date('2026-10-16T22:30:00Z') },
       ],
     });
+    await tx.product.createMany({
+      data:[
+        {workspaceId:a.id,name:'CI Product Istanbul Day',createdAt:new Date('2026-10-16T22:30:00Z')},
+        {workspaceId:a.id,name:'CI Product Same Day',createdAt:new Date('2026-10-17T20:30:00Z')},
+        {workspaceId:b.id,name:'CI Cross Tenant Product',createdAt:new Date('2026-10-16T22:30:00Z')},
+      ],
+    });
+    const productsDaily = await tx.$queryRaw`
+      SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Istanbul', 'YYYY-MM-DD') AS "day",
+             COUNT(*)::integer AS "count"
+      FROM "Product"
+      WHERE "workspaceId" = ${a.id} AND "createdAt" >= ${new Date('2026-10-16T21:00:00Z')}
+      GROUP BY 1 ORDER BY 1
+    `;
+    assert.deepEqual(productsDaily, [{ day:'2026-10-17', count:2 }]);
     // This is the production aggregate: both tenant scoping and Istanbul-day grouping.
     const daily = await tx.$queryRaw`
       SELECT to_char(("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Istanbul', 'YYYY-MM-DD') AS "day",
