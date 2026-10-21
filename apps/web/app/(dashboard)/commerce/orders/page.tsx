@@ -7,19 +7,20 @@ export const dynamic='force-dynamic';
 const statusLabels:Record<string,string>={NEW:'Yeni',CONFIRMED:'Onaylandı',PACKING:'Hazırlanıyor',SHIPPED:'Kargolandı',DELIVERED:'Teslim edildi',CANCELLED:'İptal'};
 const nextStatuses:Record<string,string[]>={NEW:['CONFIRMED','CANCELLED'],CONFIRMED:['PACKING','CANCELLED'],PACKING:['SHIPPED','CANCELLED'],SHIPPED:['DELIVERED'],DELIVERED:[],CANCELLED:[]};
 
-export default async function OrdersPage({searchParams}:{searchParams:Promise<{notice?:string;error?:string;status?:string;page?:string;q?:string}>}){
+export default async function OrdersPage({searchParams}:{searchParams:Promise<{notice?:string;error?:string;status?:string;page?:string;q?:string;create?:string}>}){
  const auth=await requireUserPage();
  const params=await searchParams;
  const workspaceId=auth.workspace?.id;
  const canManage=auth.user.isSuperAdmin||auth.membership?.role==='ADMIN';
  const filter=parseOrderFilter(params.status);
  const search=parseCommerceSearch(params.q);
- const pageSize=50;
+ const pageSize=20;
  const where=workspaceId?{workspaceId,...orderStatusCondition(filter),...orderSearchCondition(search)}:null;
- const [filteredTotal,total,pending]=await Promise.all([
+ const [filteredTotal,total,pending,cancelled]=await Promise.all([
    where?db.commerceOrder.count({where}):0,
    workspaceId?db.commerceOrder.count({where:{workspaceId}}):0,
    workspaceId?db.commerceOrder.count({where:{workspaceId,status:{in:['NEW','CONFIRMED','PACKING']}}}):0,
+   workspaceId?db.commerceOrder.count({where:{workspaceId,status:'CANCELLED'}}):0,
  ]);
  const page=clampPage(parsePage(params.page),filteredTotal,pageSize);
  const pages=Math.max(1,Math.ceil(filteredTotal/pageSize));
@@ -27,29 +28,19 @@ export default async function OrdersPage({searchParams}:{searchParams:Promise<{n
    where,orderBy:[{createdAt:'desc'},{id:'desc'}],skip:(page-1)*pageSize,take:pageSize,
    include:{connector:{select:{name:true}},_count:{select:{events:true}}},
  }):[];
- return <div className="content commerce-mobile">
+ return <div className="content commerce-mobile order-workbench">
   <div className="dashboard-heading">
     <div><span className="dashboard-eyebrow">TİCARET OPERASYONLARI / SİPARİŞLER</span><h1 className="page-title">Sipariş Yönetimi</h1><p className="page-subtitle">Sipariş kayıtları, durum geçişleri ve denetlenebilir işlem geçmişi. Trendyol sipariş senkronizasyonu henüz bağlı değildir.</p></div>
-    <span className="badge beta">İÇ OPERASYON · BETA</span>
+    <div className="order-heading-actions"><span className="badge beta">İÇ OPERASYON · BETA</span>{canManage?<a className="action primary" href="/commerce/orders?create=1#new-order">Manuel sipariş ekle</a>:null}</div>
   </div>
   {params.notice?<p role="status" className="card">Sipariş işlemi başarıyla kaydedildi.</p>:null}
   {params.error?<p role="alert" className="card" style={{color:'var(--danger)'}}>İşlem başarısız: {params.error}</p>:null}
-  <div className="dashboard-stat-grid">
-   {[{label:'Toplam sipariş',value:total},{label:'İşlem bekleyen',value:pending},{label:'Listelenen',value:orders.length},{label:'Sipariş kaynağı',value:'Manuel / Test'}].map(x=><div className="card dashboard-stat" key={x.label}><span>{x.label}</span><strong style={typeof x.value==='string'?{fontSize:19}:{}}>{x.value}</strong><small>Gerçek veritabanı kaydı</small></div>)}
-  </div>
-  {canManage?<section className="card" style={{marginTop:22}}>
-   <h2>Manuel sipariş kaydı</h2>
-   <p className="page-subtitle">Bu ekran müşteriye fatura veya pazaryerine gönderim oluşturmaz.</p>
-   <form action="/api/commerce/orders" method="post" className="commerce-product-form">
-    <label>Sipariş numarası<input className="input" name="orderNumber" minLength={3} maxLength={80} required placeholder="SIP-10001"/></label>
-    <label>Müşteri referansı<input className="input" name="customerReference" maxLength={100} placeholder="İç müşteri kodu"/></label>
-    <label>Tutar (kuruş)<input className="input" name="totalMinor" type="number" min={0} max={2000000000} required placeholder="125000"/></label>
-    <label>Para birimi<select className="input" name="currency" defaultValue="TRY"><option value="TRY">TRY</option><option value="EUR">EUR</option><option value="USD">USD</option></select></label>
-    <label className="commerce-product-description">Not<input className="input" name="notes" maxLength={1000}/></label>
-    <button type="submit" className="action primary">Siparişi kaydet</button>
-   </form>
-  </section>:null}
-  <section className="card" style={{marginTop:20}}>
+  <section className="order-status-strip" aria-label="Sipariş durum göstergeleri">
+   {[{label:'Toplam sipariş',value:total},{label:'İşlem bekleyen',value:pending},{label:'Listelenen',value:orders.length},{label:'İptaller',value:cancelled}].map(item=>
+     <div className="order-status-item" key={item.label}><span>{item.label}</span><strong>{item.value.toLocaleString('tr-TR')}</strong></div>
+   )}
+  </section>
+  <section className="card order-records-workbench" style={{marginTop:20}}>
    <div className="dashboard-section-heading"><div><h2>Sipariş kayıtları</h2><p>{filteredTotal.toLocaleString('tr-TR')} eşleşen kayıt · Sayfa {page}/{pages} · Her sayfada {pageSize} sipariş</p></div></div>
    <nav className="commerce-quick-filters" aria-label="Sipariş iş listeleri">
     {[{key:'',label:'Tümü'},{key:'OPEN',label:'İşlem bekleyen'},{key:'NEW',label:'Yeni'},{key:'PACKING',label:'Hazırlanan'},{key:'SHIPPED',label:'Kargoda'}].map(item=>
@@ -84,5 +75,17 @@ export default async function OrdersPage({searchParams}:{searchParams:Promise<{n
      {page<pages?<a className="action" href={orderPageUrl(filter,page+1,search)}>Sonraki →</a>:null}
    </nav>
   </section>
+  {canManage?<details id="new-order" className="card commerce-disclosure" open={params.create==='1'}>
+   <summary><span><strong>Yeni manuel sipariş kaydı</strong><small>İç kayıt oluşturulur; harici mağazaya gönderim yapılmaz</small></span><span aria-hidden="true">+</span></summary>
+   <p className="page-subtitle">Bu ekran müşteriye fatura veya pazaryerine gönderim oluşturmaz.</p>
+   <form action="/api/commerce/orders" method="post" className="commerce-product-form">
+    <label>Sipariş numarası<input className="input" name="orderNumber" minLength={3} maxLength={80} required placeholder="SIP-10001"/></label>
+    <label>Müşteri referansı<input className="input" name="customerReference" maxLength={100} placeholder="İç müşteri kodu"/></label>
+    <label>Tutar (kuruş)<input className="input" name="totalMinor" type="number" min={0} max={2000000000} required placeholder="125000"/></label>
+    <label>Para birimi<select className="input" name="currency" defaultValue="TRY"><option value="TRY">TRY</option><option value="EUR">EUR</option><option value="USD">USD</option></select></label>
+    <label className="commerce-product-description">Not<input className="input" name="notes" maxLength={1000}/></label>
+    <button type="submit" className="action primary">Siparişi kaydet</button>
+   </form>
+  </details>:null}
  </div>;
 }

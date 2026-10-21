@@ -5,7 +5,7 @@ import { clampPage, parsePage } from '../../../../lib/order-filters';
 import { commercePageUrl, parseCommerceSearch, parseProductStatus, productSearchCondition } from '../../../../lib/commerce-search';
 
 export const dynamic = 'force-dynamic';
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 24;
 const labels: Record<string, string> = { DRAFT:'Taslak', ACTIVE:'Aktif', ARCHIVED:'Arşivlendi' };
 
 export default async function ProductsPage({ searchParams }: {

@@ -112,6 +112,13 @@ try {
   assert.equal(filteredData.orders[0].orderNumber,'CI-E2E-VISIBLE-ORDER');
 
   await page.goto(base+'/commerce/orders');
+  assert.ok(await page.locator('.order-status-strip').isVisible());
+  assert.ok(await page.locator('.order-records-workbench').isVisible());
+  assert.equal(await page.locator('#new-order').evaluate(node=>node.open),false);
+  await page.goto(base+'/commerce/orders?create=1#new-order');
+  assert.equal(await page.locator('#new-order').evaluate(node=>node.open),true);
+  assert.ok(await page.locator('#new-order input[name="orderNumber"]').isVisible());
+  await page.goto(base+'/commerce/orders');
   assert.equal(await page.locator('a[href="/commerce/orders?page=2"]').count(),1,
     'historical orders lack next-page navigation');
   await page.locator('a[href="/commerce/orders?page=2"]').click();
